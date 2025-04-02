@@ -37,7 +37,8 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     'corsheaders',
     'business',
-    'django_crontab'
+    'django_crontab',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
