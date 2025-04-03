@@ -1,5 +1,6 @@
 import logging
 from django.http import JsonResponse
+import uuid
 
 
 class ExceptionMiddleware:
@@ -13,7 +14,7 @@ class ExceptionMiddleware:
                 f"{request.user}-访问通过{request.method}请求访问接口{request.path}"
             )
             response = self.get_response(request)
-            self.logger.info(f"用户访问接口的结果: {response.status_code},返回值为: {response.content}")
+            self.logger.info(f"用户访问接口的结果: {response.status_code}")
         except Exception as e:
             self.logger.error(
                 f"{request.user}-访问通过{request.method}请求访问接口{request.path}时发生错误: {str(e)}"
