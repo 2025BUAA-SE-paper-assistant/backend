@@ -165,3 +165,6 @@ cython_debug/
 *.bin
 *.model
 *.safetensors
+
+
+./backend/business/migrations
