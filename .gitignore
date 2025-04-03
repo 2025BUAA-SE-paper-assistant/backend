@@ -167,6 +167,8 @@ cython_debug/
 *.safetensors
 
 
-./backend/business/migrations
+backend/business/migrations
 
 backend/resource
+
+
