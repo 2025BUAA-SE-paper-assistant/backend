@@ -242,15 +242,15 @@ def vector_query(request):
     filtered_papers_list = []
     for p in filtered_papers:
         filtered_papers_list.append(p.to_dict())
-    
+
     ### 构建知识库 ###
-    
+
     try:
         tmp_kb_id = build_abs_kb_by_paper_ids([paper.paper_id for paper in filtered_papers], search_record_id)
         insert_search_record_2_kb(search_record.search_record_id, tmp_kb_id)
     except Exception as e:
         return reply.fail(msg="构建知识库失败")
-    
+
     return JsonResponse({"paper_infos": filtered_papers_list, 'ai_reply': ai_reply, 'keywords': keywords, 'search_record_id' : search_record.search_record_id}, status=200)
 
 
@@ -349,7 +349,7 @@ def dialog_query(request):
             ,
             tmp_kb_id : string // 临时知识库id
         }
-        
+
     :return: 返回一个json对象，格式为：
     {
         dialog_type: 'dialog' or 'query',
@@ -368,7 +368,7 @@ def dialog_query(request):
         ],
         content: '回复内容'
     }
-    
+
     TODO:
         1. 从Request中获取对话内容
         2. 根据最后一条user的对话回答进行关键词触发，分析属于哪种对话类型
@@ -487,14 +487,14 @@ def change_record_papers(request):
     search_record.related_papers.clear()
     for paper in papers:
         search_record.related_papers.add(paper)
-        
+
     ### 修改知识库
-    try: 
+    try:
         kb_id = build_abs_kb_by_paper_ids(paper_id_list, search_record_id)
         insert_search_record_2_kb(search_record_id, kb_id)
     except Exception as e:
         return reply.fail(msg="构建知识库失败")
-    
+
     return JsonResponse({'msg': '修改成功'}, status=200)
 
 @require_http_methods(["DELETE"])
@@ -845,9 +845,9 @@ def vector_query(request):
     filtered_papers_list = []
     for p in filtered_papers:
         filtered_papers_list.append(p.to_dict())
-    
+
     ### 构建知识库 ###
-    
+
     try:
         tmp_kb_id = build_abs_kb_by_paper_ids([paper.paper_id for paper in filtered_papers], search_record_id)
         insert_search_record_2_kb(search_record.search_record_id, tmp_kb_id)
@@ -953,7 +953,7 @@ def dialog_query(request):
             ,
             tmp_kb_id : string // 临时知识库id
         }
-        
+
     :return: 返回一个json对象，格式为：
     {
         dialog_type: 'dialog' or 'query',
@@ -972,7 +972,7 @@ def dialog_query(request):
         ],
         content: '回复内容'
     }
-    
+
     TODO:
         1. 从Request中获取对话内容
         2. 根据最后一条user的对话回答进行关键词触发，分析属于哪种对话类型
@@ -1091,14 +1091,14 @@ def change_record_papers(request):
     search_record.related_papers.clear()
     for paper in papers:
         search_record.related_papers.add(paper)
-        
+
     ### 修改知识库
-    try: 
+    try:
         kb_id = build_abs_kb_by_paper_ids(paper_id_list, search_record_id)
         insert_search_record_2_kb(search_record_id, kb_id)
     except Exception as e:
         return reply.fail(msg="构建知识库失败")
-    
+
     return JsonResponse({'msg': '修改成功'}, status=200)
 
 @require_http_methods(["DELETE"])
@@ -1122,4 +1122,3 @@ def flush(request):
             os.remove(conversation_path)
         sr.delete()
         HttpRequest('清空成功', status=200)
-        
