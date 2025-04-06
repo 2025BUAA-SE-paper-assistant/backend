@@ -10,6 +10,9 @@
 
 ## 新建虚拟环境
 
+sudo apt update
+sudo apt install python3-pip -y
+
 1. 确保已安装 `virtualenv`，如果未安装，请运行以下命令安装：
    ```bash
    pip install virtualenv
@@ -51,7 +54,7 @@ tmux attach -t my_terminal  # 恢复会话
 sudo mysql -u root -p
 
 创建数据库
-CREATE DATABASE eppdb;
+CREATE DATABASE phds;
 USE eppdb;
 
 mysql -u root -p eppdb < /root/nbackend/2024_EPP.sql

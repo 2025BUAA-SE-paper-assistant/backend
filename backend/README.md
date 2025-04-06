@@ -51,7 +51,7 @@ tmux attach -t my_terminal  # 恢复会话
 sudo mysql -u root -p
 
 创建数据库
-CREATE DATABASE eppdb;
+CREATE DATABASE phd;
 USE eppdb;
 
 mysql -u root -p eppdb < /root/nbackend/2024_EPP.sql

@@ -170,5 +170,6 @@ cython_debug/
 backend/business/migrations
 
 backend/resource
+backend/myenv/
 
 
