@@ -10,6 +10,9 @@
 
 ## 新建虚拟环境
 
+sudo apt update
+sudo apt install python3-pip -y
+
 1. 确保已安装 `virtualenv`，如果未安装，请运行以下命令安装：
    ```bash
    pip install virtualenv
