@@ -20,8 +20,9 @@ jobs:
       - name: Deploy to server
         run: |
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} <<EOF
-          cd /usr/zjq/backend
-          git pull origin main
-          chmod +x run.sh
-          ./run.sh
-          EOF
+          # cd /usr/zjq/backend
+          # git pull origin main
+          # chmod +x run.sh
+          # ./run.sh
+          # EOF
+          
