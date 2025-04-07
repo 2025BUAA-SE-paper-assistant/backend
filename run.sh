@@ -12,3 +12,4 @@ pkill -f "python manage.py runserver" || true
 
 # 启动 runserver
 python manage.py runserver 0.0.0.0:8010
+
