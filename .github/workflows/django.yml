@@ -32,12 +32,6 @@ jobs:
           python manage.py makemigrations
           python manage.py migrate
 
-          # 停止现有的 runserver 进程
-          pkill -f "python manage.py runserver" || true
-
-          # 启动 runserver 并放入后台
-          python manage.py runserver 0.0.0.0:8010
-
           # 确保脚本正常退出
           exit
           EOF
