@@ -24,5 +24,6 @@ jobs:
           git pull origin main
           chmod +x run.sh
           ./run.sh
+          exit
           EOF
 
