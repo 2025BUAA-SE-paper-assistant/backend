@@ -52,7 +52,7 @@ def login(request):
             )
     else:
         return JsonResponse(
-            {"error": "请求方法错误了", "ULogin_legal": False}, status=400
+            {"error": "请求方法错误了ma", "ULogin_legal": False}, status=400
         )
 
 
