@@ -36,7 +36,7 @@ jobs:
           pkill -f "python manage.py runserver" || true
 
           # 启动 runserver 并放入后台
-          tmux new-session -d -s my_terminal "python manage.py runserver 0.0.0.0:8010"
+          python manage.py runserver 0.0.0.0:8010
 
           # 确保脚本正常退出
           exit
