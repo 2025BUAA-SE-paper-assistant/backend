@@ -2,6 +2,8 @@ import logging
 from django.http import JsonResponse
 import uuid
 
+from backend.business.models.user import User
+
 
 class ExceptionMiddleware:
     def __init__(self, get_response):
@@ -10,6 +12,9 @@ class ExceptionMiddleware:
 
     def __call__(self, request):
         try:
+            request.user = User.objects.filter(
+                user_name = request.session.get('username')
+            ).first()
             self.logger.info(
                 f"{request.user}-访问通过{request.method}请求访问接口{request.path}"
             )
