@@ -10,5 +10,5 @@ python manage.py migrate
 # 停止现有的 runserver 进程（无需 sudo）
 pkill -f "python manage.py runserver" || true
 
-# 使用 tmux 在后台运行 Django 服务
-tmux new-session -d -s my_terminal "python manage.py runserver 0.0.0.0:8010"
+# 启动 runserver
+python manage.py runserver 0.0.0.0:8010
