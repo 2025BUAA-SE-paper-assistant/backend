@@ -129,6 +129,7 @@ urlpatterns = [
     path("api/manage/serverStatus", manage.server_status),
     path("api/manage/recordVisit", manage.record_visit),
     path("api/manage/visitStatistic", manage.visit_statistic),
+    path("api/search/wordTrend", manage.word_trend),
     # 信息检索模块
     path("api/search/easyVectorQuery", easy_vector_query),
     path("api/search/vectorQuery", vector_query),

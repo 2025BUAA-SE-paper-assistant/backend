@@ -521,3 +521,7 @@ def visit_statistic(request):
         data['data'].append(visits_dict.get(hour, 0))
 
     return reply.success(data=data, msg="访问量统计信息获取成功")
+
+@require_http_methods('GET')
+def word_trend(request):
+    return ['111']

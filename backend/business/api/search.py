@@ -117,12 +117,11 @@ def vector_query(request):
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
-
     request_data = json.loads(request.body)
     search_content = request_data.get('search_content')
     ai_reply = ""
     # filtered_paper = search_paper_with_query(search_content, limit=200) 从这里改为使用服务器的查询接口
-    vector_filtered_papers = get_filtered_paper(search_content, k=100, threshold=0.3)  # 这是新版的调用服务器模型的接口
+    # vector_filtered_papers = get_filtered_paper(search_content, k=100, threshold=0.3)  # 这是新版的调用服务器模型的接口
 
     # 进行二次关键词检索
     # 首先获取关键词, 同样使用chatglm6b的普通对话
@@ -706,156 +705,156 @@ def do_string_search(search_content):
     sorted_results = [result for distance, result in results_with_distance]
     return sorted_results[:10]  # 返回前10篇相似度最高的文章
 
-@require_http_methods(["POST"])
-def vector_query(request):
-    """
-    本函数用于处理向量化检索的请求，search_record含不存在则创建，存在（需传参数）则恢复两种情况
-    此类检索不包含上下文信息，仅用当前提问对本地知识库检索即可
-    :param Request: 请求，类型为GET
-        内容包含：{
-            "search_content": 检索关键词
-        }
-    :return: 返回一个json对象，其中为一个列表，列表中的每个元素为一个文献的信息
-    {
-        [
-            {
-                "paper_id": 文献id,
-                "title": 文献标题,
-                "authors": 作者,
-                "abstract": 摘要,
-                "time": 发布时间,
-                "journal": 期刊,
-                "ref_cnt": 引用次数,
-                "original_url": 原文地址,
-                "read_count": 阅读次数
-            }
-        ]
-    }
+# @require_http_methods(["POST"])
+# def vector_query(request):
+#     """
+#     本函数用于处理向量化检索的请求，search_record含不存在则创建，存在（需传参数）则恢复两种情况
+#     此类检索不包含上下文信息，仅用当前提问对本地知识库检索即可
+#     :param Request: 请求，类型为GET
+#         内容包含：{
+#             "search_content": 检索关键词
+#         }
+#     :return: 返回一个json对象，其中为一个列表，列表中的每个元素为一个文献的信息
+#     {
+#         [
+#             {
+#                 "paper_id": 文献id,
+#                 "title": 文献标题,
+#                 "authors": 作者,
+#                 "abstract": 摘要,
+#                 "time": 发布时间,
+#                 "journal": 期刊,
+#                 "ref_cnt": 引用次数,
+#                 "original_url": 原文地址,
+#                 "read_count": 阅读次数
+#             }
+#         ]
+#     }
 
-    TODO:
-        1. 从Request中获取user_id和search_content
-        2. 将search_content存入数据库
-        3. 使用向量检索从数据库中获取文献信息
-        4. 返回文献信息
-    """
-    # 鉴权
-    username = request.session.get('username')
-    if username is None:
-        username = 'sanyuba'
-    user = User.objects.filter(username=username).first()
-    if user is None:
-        return reply.fail(msg="请先正确登录")
+#     TODO:
+#         1. 从Request中获取user_id和search_content
+#         2. 将search_content存入数据库
+#         3. 使用向量检索从数据库中获取文献信息
+#         4. 返回文献信息
+#     """
+#     # 鉴权
+#     username = request.session.get('username')
+#     if username is None:
+#         username = 'sanyuba'
+#     user = User.objects.filter(username=username).first()
+#     if user is None:
+#         return reply.fail(msg="请先正确登录")
 
-    request_data = json.loads(request.body)
-    search_content = request_data.get('search_content')
-    search_type = request_data.get('search_type')
-    search_record_id = request_data.get('search_record_id')
-    if search_record_id is None:
-        search_record = SearchRecord(user_id=user, keyword=search_content, conversation_path=None)
-        search_record.save()
-        conversation_path = os.path.join(settings.USER_SEARCH_CONSERVATION_PATH,
-                                         str(search_record.search_record_id) + '.json')
-        if os.path.exists(conversation_path):
-            os.remove(conversation_path)
-        with open(conversation_path, 'w') as f:
-            json.dump({"conversation": []}, f, indent=4)
-        search_record.conversation_path = conversation_path
-        search_record.save()
-    else:
-        search_record = SearchRecord.objects.get(search_record_id=search_record_id)
-        conversation_path = search_record.conversation_path
+#     request_data = json.loads(request.body)
+#     search_content = request_data.get('search_content')
+#     search_type = request_data.get('search_type')
+#     search_record_id = request_data.get('search_record_id')
+#     if search_record_id is None:
+#         search_record = SearchRecord(user_id=user, keyword=search_content, conversation_path=None)
+#         search_record.save()
+#         conversation_path = os.path.join(settings.USER_SEARCH_CONSERVATION_PATH,
+#                                          str(search_record.search_record_id) + '.json')
+#         if os.path.exists(conversation_path):
+#             os.remove(conversation_path)
+#         with open(conversation_path, 'w') as f:
+#             json.dump({"conversation": []}, f, indent=4)
+#         search_record.conversation_path = conversation_path
+#         search_record.save()
+#     else:
+#         search_record = SearchRecord.objects.get(search_record_id=search_record_id)
+#         conversation_path = search_record.conversation_path
 
-    chat_chat_url = f'http://{settings.REMOTE_MODEL_BASE_PATH}/chat/chat'
-    headers = {
-        'Content-Type': 'application/json'
-    }
+#     chat_chat_url = f'http://{settings.REMOTE_MODEL_BASE_PATH}/chat/chat'
+#     headers = {
+#         'Content-Type': 'application/json'
+#     }
 
-    if search_type == 'dialogue':
-        filtered_papers = do_dialogue_search(search_content, chat_chat_url, headers)
-    else:
-        filtered_papers = do_string_search(search_content)
-        if len(filtered_papers) == 0:
-            return JsonResponse({"paper_infos": [], 'ai_reply': "EPP助手哭哭惹，很遗憾未能检索出相关论文。",
-                                 'search_record_id': search_record.search_record_id}, status=200)
+#     if search_type == 'dialogue':
+#         filtered_papers = do_dialogue_search(search_content, chat_chat_url, headers)
+#     else:
+#         filtered_papers = do_string_search(search_content)
+#         if len(filtered_papers) == 0:
+#             return JsonResponse({"paper_infos": [], 'ai_reply': "EPP助手哭哭惹，很遗憾未能检索出相关论文。",
+#                                  'search_record_id': search_record.search_record_id}, status=200)
 
-    start_year = min([paper.publication_date.year for paper in filtered_papers])
-    end_year = max([paper.publication_date.year for paper in filtered_papers])
+#     start_year = min([paper.publication_date.year for paper in filtered_papers])
+#     end_year = max([paper.publication_date.year for paper in filtered_papers])
 
-    # 发表数量最多的年份
-    most_year = max(set([paper.publication_date.year for paper in filtered_papers]),
-                    key=[paper.publication_date.year for paper in filtered_papers].count)
+#     # 发表数量最多的年份
+#     most_year = max(set([paper.publication_date.year for paper in filtered_papers]),
+#                     key=[paper.publication_date.year for paper in filtered_papers].count)
 
-    cnt = len([1 for paper in filtered_papers if paper.publication_date.year == most_year])
+#     cnt = len([1 for paper in filtered_papers if paper.publication_date.year == most_year])
 
-    ai_reply = (f'根据您的需求，Epp论文助手检索到了【{len(filtered_papers)}】篇论文，其主要分布在【{start_year}】'
-                 f'到【{end_year}】之间，其中【{most_year}】这一年的论文数量最多，有【{cnt}】篇论文,'
-                 f'显示出近几年在该领域的研究活跃度较高。\n')
-    # return reply.success({"keyword": keyword, 'papers': filtered_paper})
+#     ai_reply = (f'根据您的需求，Epp论文助手检索到了【{len(filtered_papers)}】篇论文，其主要分布在【{start_year}】'
+#                  f'到【{end_year}】之间，其中【{most_year}】这一年的论文数量最多，有【{cnt}】篇论文,'
+#                  f'显示出近几年在该领域的研究活跃度较高。\n')
+#     # return reply.success({"keyword": keyword, 'papers': filtered_paper})
 
-    # return reply.success({"data": "成功", "content": content})
-    # 进行总结， 输入标题/摘要
-    # papers_summary = f"关键词："
-    # papers_summary = "下述论文与主题"
-    # for keyword in keywords:
-    #     papers_summary += keyword + "，"
-    # papers_summary += "密切相关\n"
-    papers_summary = ""
-    for paper in filtered_papers[:20]:
-        papers_summary += f'{paper.title}\n'
-        # papers_summary += f'摘要为：{paper.abstract}\n'
+#     # return reply.success({"data": "成功", "content": content})
+#     # 进行总结， 输入标题/摘要
+#     # papers_summary = f"关键词："
+#     # papers_summary = "下述论文与主题"
+#     # for keyword in keywords:
+#     #     papers_summary += keyword + "，"
+#     # papers_summary += "密切相关\n"
+#     papers_summary = ""
+#     for paper in filtered_papers[:20]:
+#         papers_summary += f'{paper.title}\n'
+#         # papers_summary += f'摘要为：{paper.abstract}\n'
 
-    payload = json.dumps({
-        "query": papers_summary,
-        "prompt_name": "query_summary",
-        "temperature": 0.3
-    })
+#     payload = json.dumps({
+#         "query": papers_summary,
+#         "prompt_name": "query_summary",
+#         "temperature": 0.3
+#     })
 
-    response = requests.request("POST", chat_chat_url, data=payload, headers=headers, stream=False)
-    if response.status_code == 200:
-        lines = response.iter_lines()
-        for line in lines:
-            decoded_line = line.decode('utf-8')
-            print(decoded_line)
-            if decoded_line.startswith('data'):
-                data = json.loads(decoded_line.replace('data: ', ''))
-                ai_reply += data['text']
-            print(f'ai_reply: {ai_reply}')
-    else:
-        return reply.fail(msg='检索总结失败，请检查网络并重新尝试')
+#     response = requests.request("POST", chat_chat_url, data=payload, headers=headers, stream=False)
+#     if response.status_code == 200:
+#         lines = response.iter_lines()
+#         for line in lines:
+#             decoded_line = line.decode('utf-8')
+#             print(decoded_line)
+#             if decoded_line.startswith('data'):
+#                 data = json.loads(decoded_line.replace('data: ', ''))
+#                 ai_reply += data['text']
+#             print(f'ai_reply: {ai_reply}')
+#     else:
+#         return reply.fail(msg='检索总结失败，请检查网络并重新尝试')
 
-    update_search_record_2_paper(search_record, filtered_papers)
+#     update_search_record_2_paper(search_record, filtered_papers)
 
-    # 处理历史记录部分, 无需向前端传递历史记录, 仅需对话文件中添加
-    with open(conversation_path, 'r') as f:
-        conversation_history = json.load(f)
+#     # 处理历史记录部分, 无需向前端传递历史记录, 仅需对话文件中添加
+#     with open(conversation_path, 'r') as f:
+#         conversation_history = json.load(f)
 
-    conversation_history = list(conversation_history.get('conversation'))
-    conversation_history.extend([{
-        "role": "user",
-        "content": search_content
-    }, {
-        "role": "assistant",
-        "content": ai_reply
-    }])
+#     conversation_history = list(conversation_history.get('conversation'))
+#     conversation_history.extend([{
+#         "role": "user",
+#         "content": search_content
+#     }, {
+#         "role": "assistant",
+#         "content": ai_reply
+#     }])
 
-    with open(conversation_path, 'w') as f:
-        json.dump({"conversation": conversation_history}, f, indent=4)
+#     with open(conversation_path, 'w') as f:
+#         json.dump({"conversation": conversation_history}, f, indent=4)
 
-    # 将paper转化为json
-    filtered_papers_list = []
-    for p in filtered_papers:
-        filtered_papers_list.append(p.to_dict())
+#     # 将paper转化为json
+#     filtered_papers_list = []
+#     for p in filtered_papers:
+#         filtered_papers_list.append(p.to_dict())
 
-    ### 构建知识库 ###
+#     ### 构建知识库 ###
 
-    try:
-        tmp_kb_id = build_abs_kb_by_paper_ids([paper.paper_id for paper in filtered_papers], search_record_id)
-        insert_search_record_2_kb(search_record.search_record_id, tmp_kb_id)
-    except Exception as e:
-        return reply.fail(msg="构建知识库失败")
+#     try:
+#         tmp_kb_id = build_abs_kb_by_paper_ids([paper.paper_id for paper in filtered_papers], search_record_id)
+#         insert_search_record_2_kb(search_record.search_record_id, tmp_kb_id)
+#     except Exception as e:
+#         return reply.fail(msg="构建知识库失败")
 
-    # 'keywords': keywords
-    return JsonResponse({"paper_infos": filtered_papers_list, 'ai_reply': ai_reply, 'search_record_id' : search_record.search_record_id}, status=200)
+#     # 'keywords': keywords
+#     return JsonResponse({"paper_infos": filtered_papers_list, 'ai_reply': ai_reply, 'search_record_id' : search_record.search_record_id}, status=200)
 
 
 @require_http_methods(["GET"])
