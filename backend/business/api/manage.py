@@ -524,4 +524,8 @@ def visit_statistic(request):
 
 @require_http_methods('GET')
 def word_trend(request):
-    return ['111']
+    data = {
+        "word":['computer', 'AI', 'ML', 'DL', 'NLP','llm'],
+        'count':[13,12,11,10,9,8]
+    }
+    return reply.success(data=data, msg="热搜词获取成功")
