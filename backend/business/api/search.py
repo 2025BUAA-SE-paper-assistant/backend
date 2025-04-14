@@ -1135,7 +1135,6 @@ def update_wordcnt(keywords):
     period_start = current_time.replace(minute=0, second=0, microsecond=0)
 
     for keyword in keywords:
-        keyword = keyword.strip().lower()  # 统一大小写
         if not keyword:
             continue
         
@@ -1161,7 +1160,40 @@ def update_wordcnt(keywords):
                     period=period_start
                 ).update(count=F('count') + 1)
 
+
+import jieba
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords as nltk_stopwords
+def split_chinese_english(text):
+    # 正则分离中英文（中文按字符，英文按单词）
+    pattern = re.compile(r'([a-zA-Z0-9_]+|[\u4e00-\u9fa5]+)')
+    parts = pattern.findall(text)
+    return parts
 @require_http_methods(["POST"])
 def simple_query(request):
-    
-    pass
+    '''简单分词'''
+    data = json.loads(request.body)
+    search_content = data.get('search_content')
+    parts = split_chinese_english(search_content)
+    words = []
+    # TODO 配置nltk和jieba的token和停用词文件
+    for part in parts:
+        # 中文部分用jieba分词
+        if re.match(r'[\u4e00-\u9fa5]+', part):
+            words.extend(jieba.lcut(part))
+        # 英文部分按空格或NLTK分词（需安装nltk.download('punkt')）
+        else:
+            words.append(part.lower())
+            # words.extend(word_tokenize(part.lower()))  # 英文转小写
+    # 过滤停用词和短词
+    not_keywords = ["paper", "research", "article"]
+    # stopwords = list(nltk_stopwords.words('english'))
+    # print(stopwords) 
+    stopwords = []
+    filtered = [word for word in words 
+                if len(word) >= 2 
+                and word not in stopwords
+                and word not in not_keywords]
+    print(filtered)
+    update_wordcnt(filtered)
+    return JsonResponse({'msg': '搜索成功'}, status=200)
