@@ -1124,6 +1124,43 @@ def flush(request):
         HttpRequest('清空成功', status=200)
 
 
+from business.models.statistic import KeywordStat
+import datetime
+from django.db.models import F
+from django.db import transaction
+from django.db.utils import IntegrityError
+def update_wordcnt(keywords):
+    '''更新词频'''
+    current_time = datetime.datetime.now()
+    period_start = current_time.replace(minute=0, second=0, microsecond=0)
+
+    for keyword in keywords:
+        keyword = keyword.strip().lower()  # 统一大小写
+        if not keyword:
+            continue
+        
+        # 原子更新：先尝试增加现有记录的计数
+        updated = KeywordStat.objects.filter(
+            keyword=keyword, 
+            period=period_start
+        ).update(count=F('count') + 1)
+        
+        if updated == 0:
+            # 没有找到记录，创建新记录（处理并发创建冲突）
+            try:
+                with transaction.atomic():
+                    KeywordStat.objects.create(
+                        keyword=keyword,
+                        period=period_start,
+                        count=1
+                    )
+            except IntegrityError:
+                # 其他请求已创建，再次尝试更新
+                KeywordStat.objects.filter(
+                    keyword=keyword,
+                    period=period_start
+                ).update(count=F('count') + 1)
+
 @require_http_methods(["POST"])
 def simple_query(request):
     

@@ -28,7 +28,7 @@ class UserVisit(models.Model):
 
 
 
-from django.utils import timezone
+
 # 搜索关键词统计
 class KeywordStat(models.Model):
     keyword = models.CharField(max_length=100)
