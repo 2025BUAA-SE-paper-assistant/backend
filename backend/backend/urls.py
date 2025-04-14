@@ -64,6 +64,7 @@ from business.api.search import (
     restore_search_record,
     build_kb,
     change_record_papers,
+    simple_query,
 )
 from business.utils.paper_vdb_init import local_vdb_init, easy_vector_query
 from business.api.summary import (
@@ -129,6 +130,7 @@ urlpatterns = [
     path("api/manage/serverStatus", manage.server_status),
     path("api/manage/recordVisit", manage.record_visit),
     path("api/manage/visitStatistic", manage.visit_statistic),
+    path("api/search/wordTrend", manage.word_trend),
     # 信息检索模块
     path("api/search/easyVectorQuery", easy_vector_query),
     path("api/search/vectorQuery", vector_query),
@@ -139,6 +141,7 @@ urlpatterns = [
     path("api/search/rebuildKB", build_kb),
     # path('api/search/getSearchRecord', get_search_record),
     path("api/search/changeRecordPapers", change_record_papers),
+    path("api/search/simpleQuery", simple_query),
     # 向量化模块
     # path("insert_vector_database", insert_vector_database),
     # 文献研读模块

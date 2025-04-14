@@ -58,7 +58,7 @@ MIDDLEWARE = [
 ]
 
 # 设置跨域SESSION配置，本地测试时需要SESSION_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SECURE = False # TODO 
 SESSION_COOKIE_SAMESITE = "None"
 CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_HTTPONLY = True
@@ -185,6 +185,7 @@ USER_REPORTS_PATH = "resource/database/users/reports"  # 用户生成报告路�
 USER_SEARCH_CONSERVATION_PATH = (
     "resource/database/users/conversation/search"  # 调研助手对话文件路径
 )
+
 USER_READ_CONSERVATION_PATH = (
     "resource/database/users/conversation/read"  # 论文研读助手对话文件路径
 )

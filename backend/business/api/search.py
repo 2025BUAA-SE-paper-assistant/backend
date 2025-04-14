@@ -117,12 +117,11 @@ def vector_query(request):
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
-
     request_data = json.loads(request.body)
     search_content = request_data.get('search_content')
     ai_reply = ""
     # filtered_paper = search_paper_with_query(search_content, limit=200) 从这里改为使用服务器的查询接口
-    vector_filtered_papers = get_filtered_paper(search_content, k=100, threshold=0.3)  # 这是新版的调用服务器模型的接口
+    # vector_filtered_papers = get_filtered_paper(search_content, k=100, threshold=0.3)  # 这是新版的调用服务器模型的接口
 
     # 进行二次关键词检索
     # 首先获取关键词, 同样使用chatglm6b的普通对话
@@ -706,6 +705,7 @@ def do_string_search(search_content):
     sorted_results = [result for distance, result in results_with_distance]
     return sorted_results[:10]  # 返回前10篇相似度最高的文章
 
+# TODO 多重回调
 @require_http_methods(["POST"])
 def vector_query(request):
     """
@@ -1122,3 +1122,78 @@ def flush(request):
             os.remove(conversation_path)
         sr.delete()
         HttpRequest('清空成功', status=200)
+
+
+from business.models.statistic import KeywordStat
+import datetime
+from django.db.models import F
+from django.db import transaction
+from django.db.utils import IntegrityError
+def update_wordcnt(keywords):
+    '''更新词频'''
+    current_time = datetime.datetime.now()
+    period_start = current_time.replace(minute=0, second=0, microsecond=0)
+
+    for keyword in keywords:
+        if not keyword:
+            continue
+        
+        # 原子更新：先尝试增加现有记录的计数
+        updated = KeywordStat.objects.filter(
+            keyword=keyword, 
+            period=period_start
+        ).update(count=F('count') + 1)
+        
+        if updated == 0:
+            # 没有找到记录，创建新记录（处理并发创建冲突）
+            try:
+                with transaction.atomic():
+                    KeywordStat.objects.create(
+                        keyword=keyword,
+                        period=period_start,
+                        count=1
+                    )
+            except IntegrityError:
+                # 其他请求已创建，再次尝试更新
+                KeywordStat.objects.filter(
+                    keyword=keyword,
+                    period=period_start
+                ).update(count=F('count') + 1)
+
+
+import jieba
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords as nltk_stopwords
+def split_chinese_english(text):
+    # 正则分离中英文（中文按字符，英文按单词）
+    pattern = re.compile(r'([a-zA-Z0-9_]+|[\u4e00-\u9fa5]+)')
+    parts = pattern.findall(text)
+    return parts
+@require_http_methods(["POST"])
+def simple_query(request):
+    '''简单分词'''
+    data = json.loads(request.body)
+    search_content = data.get('search_content')
+    parts = split_chinese_english(search_content)
+    words = []
+    # TODO 配置nltk和jieba的token和停用词文件
+    for part in parts:
+        # 中文部分用jieba分词
+        if re.match(r'[\u4e00-\u9fa5]+', part):
+            words.extend(jieba.lcut(part))
+        # 英文部分按空格或NLTK分词（需安装nltk.download('punkt')）
+        else:
+            words.append(part.lower())
+            # words.extend(word_tokenize(part.lower()))  # 英文转小写
+    # 过滤停用词和短词
+    not_keywords = ["paper", "research", "article"]
+    # stopwords = list(nltk_stopwords.words('english'))
+    # print(stopwords) 
+    stopwords = []
+    filtered = [word for word in words 
+                if len(word) >= 2 
+                and word not in stopwords
+                and word not in not_keywords]
+    print(filtered)
+    update_wordcnt(filtered)
+    return JsonResponse({'msg': '搜索成功'}, status=200)

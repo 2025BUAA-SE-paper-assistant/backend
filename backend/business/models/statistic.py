@@ -25,3 +25,21 @@ class UserVisit(models.Model):
 
     class Meta:
         unique_together = ('ip_address', 'timestamp')
+
+
+
+
+# 搜索关键词统计
+class KeywordStat(models.Model):
+    keyword = models.CharField(max_length=100)
+    count = models.PositiveIntegerField(default=0)
+    period = models.DateTimeField()  # 每个小时的起始时间
+
+    class Meta:
+        unique_together = [['keyword', 'period']]  # 确保同一小时内的关键词唯一
+        indexes = [
+            models.Index(fields=['period', 'keyword']),  # 优化查询速度
+        ]
+
+    def __str__(self):
+        return f"{self.keyword} ({self.period}): {self.count}"
