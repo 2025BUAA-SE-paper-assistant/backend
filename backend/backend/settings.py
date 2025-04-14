@@ -207,7 +207,7 @@ MAX_Similarity = 0.8  # 最大相似度，介于-1和1之间，不确定
 # 远程模型部署开放的API接口
 REMOTE_MODEL_BASE_PATH = "10.2.16.28:2334"
 # 使用openai流式接口调用glm3大模型，不附带知识库
-REMOTE_CHATCHAT_GLM3_OPENAI_PATH = "172.17.62.88:20005"
+REMOTE_CHATCHAT_GLM3_OPENAI_PATH = "10.2.16.28:2338"
 
 # 语义检索相关
 VECTOR_DIM = 1024
