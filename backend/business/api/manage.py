@@ -545,3 +545,5 @@ def word_trend(request):
         for item in hot_keywords
     ]
     return reply.success(data={'hot_search':data}, msg="热搜词获取成功")
+
+
