@@ -137,11 +137,14 @@ def vector_query(request):
     response = requests.request("POST", chat_chat_url, data=payload, headers=headers, stream=False)
     keyword = ""
 
-    decoded_line = response.iter_lines().__next__().decode('utf-8')
+    for line in response.iter_lines():
+        decoded_line = line.decode('utf-8')
+        if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+            continue
     # print(decoded_line)
-    if decoded_line.startswith('data'):
-        data = json.loads(decoded_line.replace('data: ', ''))
-        keyword += data['text']
+        if decoded_line.startswith('data'):
+            data = json.loads(decoded_line.replace('data: ', ''))
+            keyword += data['text']
 
     print(keyword)
     keywords = keyword.split(", ")  # ["aa", "bb"]
@@ -194,6 +197,8 @@ def vector_query(request):
         lines = response.iter_lines()
         for line in lines:
             decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
             print(decoded_line)
             if decoded_line.startswith('data'):
                 data = json.loads(decoded_line.replace('data: ', ''))
@@ -325,6 +330,8 @@ def kb_ask_ai(payload):
     for line in response.iter_lines():
         if line:
             decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
             if decoded_line.startswith('data'):
                 data = decoded_line.replace('data: ', '')
                 data = json.loads(data)
@@ -591,12 +598,17 @@ def queryGLM(msg: str, history=None) -> str:
         response.raise_for_status()
 
         # 确保正确处理分块响应
-        decoded_line = next(response.iter_lines()).decode('utf-8')
-        print(decoded_line)
-        if decoded_line.startswith('data'):
-            data = json.loads(decoded_line.replace('data: ', ''))
-        else:
-            data = decoded_line
+        data = None
+        for line in response.iter_lines():
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+            if decoded_line.startswith('data'):
+                data = json.loads(decoded_line.replace('data: ', ''))
+            else:
+                data = decoded_line
+        if data is None:
+            return "错误: 无法获取响应"
         return data['text']
     except requests.exceptions.ChunkedEncodingError as e:
         print(f"ChunkedEncodingError: {e}")
@@ -645,11 +657,14 @@ def do_dialogue_search(search_content, chat_chat_url, headers):
     response = requests.request("POST", chat_chat_url, data=payload, headers=headers, stream=False)
     keyword = ""
 
-    decoded_line = response.iter_lines().__next__().decode('utf-8')
+    for line in response.iter_lines():
+        decoded_line = line.decode('utf-8')
+        if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+            continue
     # print(decoded_line)
-    if decoded_line.startswith('data'):
-        data = json.loads(decoded_line.replace('data: ', ''))
-        keyword += data['text']
+        if decoded_line.startswith('data'):
+            data = json.loads(decoded_line.replace('data: ', ''))
+            keyword += data['text']
 
     print(keyword)
     keywords = keyword.split(", ")  # ["aa", "bb"]
@@ -816,6 +831,8 @@ def vector_query(request):
         for line in lines:
             decoded_line = line.decode('utf-8')
             print(decoded_line)
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
             if decoded_line.startswith('data'):
                 data = json.loads(decoded_line.replace('data: ', ''))
                 ai_reply += data['text']
@@ -930,6 +947,8 @@ def kb_ask_ai(payload):
     for line in response.iter_lines():
         if line:
             decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
             if decoded_line.startswith('data'):
                 data = decoded_line.replace('data: ', '')
                 data = json.loads(data)

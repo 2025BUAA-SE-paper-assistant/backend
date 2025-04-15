@@ -323,6 +323,8 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
         for line in response.iter_lines():
             if line:
                 decoded_line = line.decode('utf-8')
+                if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                    continue
                 if decoded_line.startswith('data'):
                     data = decoded_line.replace('data: ', '')
                     data = json.loads(data)
