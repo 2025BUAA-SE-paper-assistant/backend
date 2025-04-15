@@ -328,10 +328,12 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
                 if decoded_line.startswith('data'):
                     data = decoded_line.replace('data: ', '')
                     data = json.loads(data)
-                    ai_reply += data["answer"]
-                    for doc in data["docs"]:
-                        doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
-                        origin_docs.append(doc)
+                    if "answer" in data:
+                        ai_reply += data["answer"]
+                    elif "docs" in data:
+                        for doc in data["docs"]:
+                            doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                            origin_docs.append(doc)
         return ai_reply, origin_docs
 
     # task = asyncio.create_task(_get_ai_reply())  # 创建任务
