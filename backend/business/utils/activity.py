@@ -3,23 +3,30 @@ from datetime import datetime, timedelta
 from business.models.statistic import UserActivityStat
 from business.models.user import User
 
+acitivity_points = {
+    'login': 7,  # 登录
+    'search': 3,  # 搜索
+    'upload': 10,  # 上传
+    'download': 5,  # 下载
+    'comment': 5,  # 评论
+    'annotation': 5,  # 批注
+    'chat': 3,  # 聊天
+}
 
-def calculate_user_activity(user_id: str) -> int:
+def update_user_activity(user_id, type='login'):
     """
-    计算用户活跃度
+    更新用户活跃度
     :param user_id: 用户ID
-    :return: 活跃度值
+    :param type: 活跃类型
     """
+    if type not in acitivity_points:
+        raise ValueError(f"Invalid activity type: {type}")
+
     # 获取当前时间
     now = datetime.now()
-    # 计算过去7天的时间范围
-    start_time = now - timedelta(days=7)
-
-    # 查询过去7天内的用户活跃行为记录
-    activities = UserActivityStat.objects.filter(user_id=user_id, timestamp__gte=start_time)
-
-    # 计算活跃度值（例如：活动数量）
-    activity_value = activities.count()
-
-    return activity_value
-
+    # 获取用户的活跃度记录
+    user_activity = UserActivityStat(user_id=user_id, 
+                                     activity_points=acitivity_points[type],
+                                     timestamp=now)
+    # 更新活跃度
+    user_activity.save()
