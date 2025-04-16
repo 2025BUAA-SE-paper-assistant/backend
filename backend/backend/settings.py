@@ -58,8 +58,8 @@ MIDDLEWARE = [
 ]
 
 # 设置跨域SESSION配置，本地测试时需要SESSION_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False # TODO 
-SESSION_COOKIE_SAMESITE = "None"
+# SESSION_COOKIE_SECURE = False # TODO 
+# SESSION_COOKIE_SAMESITE = "None"
 CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_HTTPONLY = True
 # 设置iframe跨域
@@ -73,6 +73,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:10516",
     "http://127.0.0.1:10516",
     "https://epp.buaase.cn",
+    "http://114.116.195.166",
 ]
 
 CORS_ALLOW_METHODS = (
