@@ -59,8 +59,8 @@ MIDDLEWARE = [
 ]
 
 # 设置跨域SESSION配置，本地测试时需要SESSION_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = "None"
+# SESSION_COOKIE_SECURE = False # TODO 
+# SESSION_COOKIE_SAMESITE = "None"
 CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_HTTPONLY = True
 # 设置iframe跨域
@@ -74,6 +74,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:10516",
     "http://127.0.0.1:10516",
     "https://epp.buaase.cn",
+    "http://114.116.195.166",
 ]
 
 CORS_ALLOW_METHODS = (
@@ -192,6 +193,7 @@ USER_REPORTS_PATH = "resource/database/users/reports"  # 用户生成报告路�
 USER_SEARCH_CONSERVATION_PATH = (
     "resource/database/users/conversation/search"  # 调研助手对话文件路径
 )
+
 USER_READ_CONSERVATION_PATH = (
     "resource/database/users/conversation/read"  # 论文研读助手对话文件路径
 )
@@ -211,9 +213,9 @@ CACHE_PATH = "/cache/"  # 缓存路径
 MAX_Similarity = 0.8  # 最大相似度，介于-1和1之间，不确定
 
 # 远程模型部署开放的API接口
-REMOTE_MODEL_BASE_PATH = "172.17.62.88:7861"
+REMOTE_MODEL_BASE_PATH = "10.2.16.28:2334"
 # 使用openai流式接口调用glm3大模型，不附带知识库
-REMOTE_CHATCHAT_GLM3_OPENAI_PATH = "172.17.62.88:20005"
+REMOTE_CHATCHAT_GLM3_OPENAI_PATH = "10.2.16.28:2338"
 
 # 语义检索相关
 VECTOR_DIM = 1024

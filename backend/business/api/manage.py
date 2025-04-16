@@ -521,3 +521,27 @@ def visit_statistic(request):
         data['data'].append(visits_dict.get(hour, 0))
 
     return reply.success(data=data, msg="访问量统计信息获取成功")
+
+import datetime
+from business.models.statistic import KeywordStat
+from django.db.models import Sum
+@require_http_methods('GET')
+def word_trend(request):
+    now = datetime.datetime.now()
+    start_period = now - datetime.timedelta(hours=24)
+    
+    # 聚合查询关键词总频次
+    hot_keywords = (
+        KeywordStat.objects
+        .filter(period__gte=start_period)
+        .values('keyword')
+        .annotate(total=Sum('count'))
+        .order_by('-total')[:10]  # 按总频次降序取前10
+    )
+    
+    # 构造响应数据
+    data = [
+        {'keyword': item['keyword'], 'count': item['total']}
+        for item in hot_keywords
+    ]
+    return reply.success(data={'hot_search':data}, msg="热搜词获取成功")
