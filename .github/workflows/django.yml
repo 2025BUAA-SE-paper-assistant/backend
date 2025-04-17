@@ -22,6 +22,6 @@ jobs:
           ssh -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }} <<EOF
           cd /usr/zjq/backend
           git pull origin main
-          chmod +x run.sh
-          ./run.sh
-          EOF
+          cd backend
+          source myenv/bin/activate
+          pip install -r requirements.txt

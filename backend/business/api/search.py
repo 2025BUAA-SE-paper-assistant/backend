@@ -117,14 +117,13 @@ def vector_query(request):
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
-
     request_data = json.loads(request.body)
     search_content = request_data.get("search_content")
     ai_reply = ""
     # filtered_paper = search_paper_with_query(search_content, limit=200) 从这里改为使用服务器的查询接口
-    vector_filtered_papers = get_filtered_paper(
-        search_content, k=100, threshold=0.3
-    )  # 这是新版的调用服务器模型的接口
+
+    # vector_filtered_papers = get_filtered_paper(search_content, k=100, threshold=0.3)  # 这是新版的调用服务器模型的接口
+
 
     # 进行二次关键词检索
     # 首先获取关键词, 同样使用chatglm6b的普通对话
@@ -138,11 +137,15 @@ def vector_query(request):
     )
     keyword = ""
 
-    decoded_line = response.iter_lines().__next__().decode("utf-8")
+
+    for line in response.iter_lines():
+        decoded_line = line.decode('utf-8')
+        if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+            continue
     # print(decoded_line)
-    if decoded_line.startswith("data"):
-        data = json.loads(decoded_line.replace("data: ", ""))
-        keyword += data["text"]
+        if decoded_line.startswith('data'):
+            data = json.loads(decoded_line.replace('data: ', ''))
+            keyword += data['text']
 
     print(keyword)
     keywords = keyword.split(", ")  # ["aa", "bb"]
@@ -200,7 +203,10 @@ def vector_query(request):
     if response.status_code == 200:
         lines = response.iter_lines()
         for line in lines:
-            decoded_line = line.decode("utf-8")
+
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
             print(decoded_line)
             if decoded_line.startswith("data"):
                 data = json.loads(decoded_line.replace("data: ", ""))
@@ -351,19 +357,19 @@ def kb_ask_ai(payload):
     print(response)
     for line in response.iter_lines():
         if line:
-            decoded_line = line.decode("utf-8")
-            if decoded_line.startswith("data"):
-                data = decoded_line.replace("data: ", "")
+
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+            if decoded_line.startswith('data'):
+                data = decoded_line.replace('data: ', '')
                 data = json.loads(data)
-                ai_reply += data["answer"]
-                for doc in data["docs"]:
-                    doc = (
-                        str(doc)
-                        .replace("\n", " ")
-                        .replace("<span style='color:red'>", "")
-                        .replace("</span>", "")
-                    )
-                    origin_docs.append(doc)
+                if "answer" in data:
+                    ai_reply += data["answer"]
+                elif "docs" in data:
+                    for doc in data["docs"]:
+                        doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                        origin_docs.append(doc)
     return ai_reply, origin_docs
 
 
@@ -643,13 +649,19 @@ def queryGLM(msg: str, history=None) -> str:
         response.raise_for_status()
 
         # 确保正确处理分块响应
-        decoded_line = next(response.iter_lines()).decode("utf-8")
-        print(decoded_line)
-        if decoded_line.startswith("data"):
-            data = json.loads(decoded_line.replace("data: ", ""))
-        else:
-            data = decoded_line
-        return data["text"]
+
+        data = None
+        for line in response.iter_lines():
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+            if decoded_line.startswith('data'):
+                data = json.loads(decoded_line.replace('data: ', ''))
+            else:
+                data = decoded_line
+        if data is None:
+            return "错误: 无法获取响应"
+        return data['text']
     except requests.exceptions.ChunkedEncodingError as e:
         print(f"ChunkedEncodingError: {e}")
         return "错误: 响应提前结束"
@@ -700,11 +712,15 @@ def do_dialogue_search(search_content, chat_chat_url, headers):
     )
     keyword = ""
 
-    decoded_line = response.iter_lines().__next__().decode("utf-8")
+
+    for line in response.iter_lines():
+        decoded_line = line.decode('utf-8')
+        if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+            continue
     # print(decoded_line)
-    if decoded_line.startswith("data"):
-        data = json.loads(decoded_line.replace("data: ", ""))
-        keyword += data["text"]
+        if decoded_line.startswith('data'):
+            data = json.loads(decoded_line.replace('data: ', ''))
+            keyword += data['text']
 
     print(keyword)
     keywords = keyword.split(", ")  # ["aa", "bb"]
@@ -763,6 +779,7 @@ def do_string_search(search_content):
     return sorted_results[:10]  # 返回前10篇相似度最高的文章
 
 
+# TODO 多重回调
 @require_http_methods(["POST"])
 def vector_query(request):
     """
@@ -894,10 +911,13 @@ def vector_query(request):
         for line in lines:
             decoded_line = line.decode("utf-8")
             print(decoded_line)
-            if decoded_line.startswith("data"):
-                data = json.loads(decoded_line.replace("data: ", ""))
-                ai_reply += data["text"]
-            print(f"ai_reply: {ai_reply}")
+
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+            if decoded_line.startswith('data'):
+                data = json.loads(decoded_line.replace('data: ', ''))
+                ai_reply += data['text']
+            print(f'ai_reply: {ai_reply}')
     else:
         return reply.fail(msg="检索总结失败，请检查网络并重新尝试")
 
@@ -1020,19 +1040,19 @@ def kb_ask_ai(payload):
     print(response)
     for line in response.iter_lines():
         if line:
-            decoded_line = line.decode("utf-8")
-            if decoded_line.startswith("data"):
-                data = decoded_line.replace("data: ", "")
+
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+            if decoded_line.startswith('data'):
+                data = decoded_line.replace('data: ', '')
                 data = json.loads(data)
-                ai_reply += data["answer"]
-                for doc in data["docs"]:
-                    doc = (
-                        str(doc)
-                        .replace("\n", " ")
-                        .replace("<span style='color:red'>", "")
-                        .replace("</span>", "")
-                    )
-                    origin_docs.append(doc)
+                if "answer" in data:
+                    ai_reply += data["answer"]
+                elif "docs" in data:
+                    for doc in data["docs"]:
+                        doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                        origin_docs.append(doc)
     return ai_reply, origin_docs
 
 
@@ -1236,4 +1256,81 @@ def flush(request):
         if os.path.exists(conversation_path):
             os.remove(conversation_path)
         sr.delete()
-        HttpRequest("清空成功", status=200)
+
+        HttpRequest('清空成功', status=200)
+
+
+from business.models.statistic import KeywordStat
+import datetime
+from django.db.models import F
+from django.db import transaction
+from django.db.utils import IntegrityError
+def update_wordcnt(keywords):
+    '''更新词频'''
+    current_time = datetime.datetime.now()
+    period_start = current_time.replace(minute=0, second=0, microsecond=0)
+
+    for keyword in keywords:
+        if not keyword:
+            continue
+        
+        # 原子更新：先尝试增加现有记录的计数
+        updated = KeywordStat.objects.filter(
+            keyword=keyword, 
+            period=period_start
+        ).update(count=F('count') + 1)
+        
+        if updated == 0:
+            # 没有找到记录，创建新记录（处理并发创建冲突）
+            try:
+                with transaction.atomic():
+                    KeywordStat.objects.create(
+                        keyword=keyword,
+                        period=period_start,
+                        count=1
+                    )
+            except IntegrityError:
+                # 其他请求已创建，再次尝试更新
+                KeywordStat.objects.filter(
+                    keyword=keyword,
+                    period=period_start
+                ).update(count=F('count') + 1)
+
+
+import jieba
+from nltk.tokenize import word_tokenize
+from nltk.corpus import stopwords as nltk_stopwords
+def split_chinese_english(text):
+    # 正则分离中英文（中文按字符，英文按单词）
+    pattern = re.compile(r'([a-zA-Z0-9_]+|[\u4e00-\u9fa5]+)')
+    parts = pattern.findall(text)
+    return parts
+@require_http_methods(["POST"])
+def simple_query(request):
+    '''简单分词'''
+    data = json.loads(request.body)
+    search_content = data.get('search_content')
+    parts = split_chinese_english(search_content)
+    words = []
+    # TODO 配置nltk和jieba的token和停用词文件
+    for part in parts:
+        # 中文部分用jieba分词
+        if re.match(r'[\u4e00-\u9fa5]+', part):
+            words.extend(jieba.lcut(part))
+        # 英文部分按空格或NLTK分词（需安装nltk.download('punkt')）
+        else:
+            words.append(part.lower())
+            # words.extend(word_tokenize(part.lower()))  # 英文转小写
+    # 过滤停用词和短词
+    not_keywords = ["paper", "research", "article"]
+    # stopwords = list(nltk_stopwords.words('english'))
+    # print(stopwords) 
+    stopwords = []
+    filtered = [word for word in words 
+                if len(word) >= 2 
+                and word not in stopwords
+                and word not in not_keywords]
+    print(filtered)
+    update_wordcnt(filtered)
+    return JsonResponse({'msg': '搜索成功'}, status=200)
+

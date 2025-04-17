@@ -56,13 +56,20 @@ def queryGLM(msg: str, history=None) -> str:
         response.raise_for_status()
 
         # 确保正确处理分块响应
-        decoded_line = next(response.iter_lines()).decode("utf-8")
-        print(decoded_line)
-        if decoded_line.startswith("data"):
-            data = json.loads(decoded_line.replace("data: ", ""))
-        else:
-            data = decoded_line
-        return data["text"]
+
+        data = None
+        for line in response.iter_lines():
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+            print(decoded_line)
+            if decoded_line.startswith('data'):
+                data = json.loads(decoded_line.replace('data: ', ''))
+            else:
+                data = decoded_line
+        if data is None:
+            return "错误: 无法获取响应"
+        return data['text']
     except requests.exceptions.ChunkedEncodingError as e:
         print(f"ChunkedEncodingError: {e}")
         return "错误: 响应提前结束"

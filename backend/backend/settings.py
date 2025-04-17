@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "rest_framework",
     "rest_framework_simplejwt",
     "django_extensions",
+    "channels",
 ]
 
 MIDDLEWARE = [
@@ -58,10 +59,12 @@ MIDDLEWARE = [
 ]
 
 # 设置跨域SESSION配置，本地测试时需要SESSION_COOKIE_SECURE = False
+
 # SESSION_COOKIE_SECURE = True
+
 # SESSION_COOKIE_SAMESITE = "None"
 CORS_ALLOW_CREDENTIALS = True
-SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = False
 # 设置iframe跨域
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
@@ -73,6 +76,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:10516",
     "http://127.0.0.1:10516",
     "https://epp.buaase.cn",
+    "http://114.116.195.166",
 ]
 
 CORS_ALLOW_METHODS = (
@@ -120,6 +124,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "backend.wsgi.application"
+ASGI_APPLICATION = "backend.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -130,10 +135,15 @@ DATABASES = {
         #  'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
         "ENGINE": "django.db.backends.mysql",
         "NAME": "phds",
-        "USER": "root",
-        "PASSWORD": "zjq031217",
-        "HOST": "127.0.0.1",
+        "USER": "zjq",
+        "PASSWORD": "123456",
+        "HOST": "114.116.195.166",
         "PORT": "3306",
+        "OPTIONS": {
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            # 添加以下设置尝试解决认证问题
+            "charset": "utf8mb4",
+        },
     }
 }
 
@@ -202,6 +212,7 @@ USER_READ_MAP_PATH = os.path.join(
     "read",
     "file_reading_2_tmp_kb_id_map.json",
 )
+
 USER_SEARCH_MAP_PATH = os.path.join(
     RESOURCE_PATH,
     "database",
@@ -233,6 +244,19 @@ WIN_WKHTMLTOPDF_PATH = os.path.join(
 LINUX_WKHTMLTOPDF_PATH = "/usr/bin/wkhtmltopdf"  # 安装位置
 
 LOCAL_VECTOR_DATABASE_PATH = os.path.join(RESOURCE_PATH, "vector_database_for_search")
+
+
+CACHE_PATH = "/cache/"  # 缓存路径
+
+MAX_Similarity = 0.8  # 最大相似度，介于-1和1之间，不确定
+
+# 远程模型部署开放的API接口
+REMOTE_MODEL_BASE_PATH = "10.2.16.28:2334"
+# 使用openai流式接口调用glm3大模型，不附带知识库
+REMOTE_CHATCHAT_GLM3_OPENAI_PATH = "10.2.16.28:2338"
+
+# 语义检索相关
+VECTOR_DIM = 1024
 LOCAL_FAISS_NAME = "paper_index.faiss"
 LOCAL_METADATA_NAME = "paper_metadata.pkl"
 
@@ -295,9 +319,21 @@ log_dir = os.path.join(BASE_DIR, "logs")
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 
+
 LOGGING["handlers"]["file"]["filename"] = os.path.join(log_dir, "debug.log")
 
 REMOTE_MODEL_BASE_PATH = "127.0.0.1"
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
+
+
 # CRONJOBS = [
 #     ('0 0 * * *', 'business.api.paper_recommand.refreshRecommendation'),
 # ]
