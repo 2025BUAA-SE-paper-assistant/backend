@@ -74,6 +74,13 @@ from business.api.summary import (
 )
 
 from business.api.paper_recommend import get_recommendation
+from business.api.remark_api import (
+    create_remark,
+    get_remarks,
+    update_remark,
+    delete_remark,
+    like_remark,
+)
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -163,4 +170,10 @@ urlpatterns = [
     path("api/refresh", get_recommendation),
     # JWT认证模块
     path("api/auth/", include("business.api.jwt_auth")),
+    # 标注相关模块
+    path("api/remark/create", create_remark),
+    path("api/remark/<str:paper_id>", get_remarks),
+    path("api/remark/update/<int:remark_id>", update_remark),
+    path("api/remark/delete/<int:remark_id>", delete_remark),
+    path("api/remark/like/<int:remark_id>", like_remark),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)

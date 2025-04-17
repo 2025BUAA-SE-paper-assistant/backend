@@ -42,7 +42,8 @@ INSTALLED_APPS = [
     "django_crontab",
     "rest_framework",
     "rest_framework_simplejwt",
-    'django_extensions',
+    "django_extensions",
+    "channels",
 ]
 
 MIDDLEWARE = [
@@ -58,10 +59,10 @@ MIDDLEWARE = [
 ]
 
 # 设置跨域SESSION配置，本地测试时需要SESSION_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = False # TODO 
-SESSION_COOKIE_SAMESITE = "None"
+# SESSION_COOKIE_SECURE = False # TODO 
+# SESSION_COOKIE_SAMESITE = "None"
 CORS_ALLOW_CREDENTIALS = True
-SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_HTTPONLY = False
 # 设置iframe跨域
 X_FRAME_OPTIONS = "SAMEORIGIN"
 
@@ -73,6 +74,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:10516",
     "http://127.0.0.1:10516",
     "https://epp.buaase.cn",
+    "http://114.116.195.166",
 ]
 
 CORS_ALLOW_METHODS = (
@@ -120,6 +122,7 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "backend.wsgi.application"
+ASGI_APPLICATION = "backend.asgi.application"
 
 # Database
 # https://docs.djangoproject.com/en/4.2/ref/settings/#databases
@@ -134,6 +137,11 @@ DATABASES = {
         "PASSWORD": "123456",
         "HOST": "114.116.195.166",
         "PORT": "3306",
+        "OPTIONS": {
+            "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
+            # 添加以下设置尝试解决认证问题
+            "charset": "utf8mb4",
+        },
     }
 }
 
@@ -279,6 +287,15 @@ LOGGING = {
 log_dir = os.path.join(BASE_DIR, "logs")
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
+
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            "hosts": [("127.0.0.1", 6379)],
+        },
+    },
+}
 
 # CRONJOBS = [
 #     ('0 0 * * *', 'business.api.paper_recommand.refreshRecommendation'),
