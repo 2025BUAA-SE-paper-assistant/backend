@@ -42,7 +42,7 @@ INSTALLED_APPS = [
     "django_crontab",
     "rest_framework",
     "rest_framework_simplejwt",
-    'django_extensions',
+    "django_extensions",
 ]
 
 MIDDLEWARE = [
@@ -50,7 +50,7 @@ MIDDLEWARE = [
     "django.contrib.sessions.middleware.SessionMiddleware",
     "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
-    # "django.middleware.csrf.CsrfViewMiddleware",
+    # "django.middleware.csrf.CsrfViewMiddleware",  # 禁用 CSRF 验证
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
@@ -58,8 +58,8 @@ MIDDLEWARE = [
 ]
 
 # 设置跨域SESSION配置，本地测试时需要SESSION_COOKIE_SECURE = False
-SESSION_COOKIE_SECURE = True
-SESSION_COOKIE_SAMESITE = "None"
+# SESSION_COOKIE_SECURE = True
+# SESSION_COOKIE_SAMESITE = "None"
 CORS_ALLOW_CREDENTIALS = True
 SESSION_COOKIE_HTTPONLY = True
 # 设置iframe跨域
@@ -131,8 +131,8 @@ DATABASES = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "phds",
         "USER": "root",
-        "PASSWORD": "123456",
-        "HOST": "localhost",
+        "PASSWORD": "zjq031217",
+        "HOST": "127.0.0.1",
         "PORT": "3306",
     }
 }
@@ -179,61 +179,77 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "business.User"
 
-USER_AVATARS_PATH = "resource/uploads/users/avatars"  # 用户头像相对路径
-USER_DOCUMENTS_PATH = "resource/uploads/users/documents"  # 用户上传文件路径
-USER_REPORTS_PATH = "resource/database/users/reports"  # 用户生成报告路径
-USER_SEARCH_CONSERVATION_PATH = (
-    "resource/database/users/conversation/search"  # 调研助手对话文件路径
+USER_AVATARS_PATH = os.path.join(
+    RESOURCE_PATH, "uploads", "users", "avatars"
+)  # 用户头像相对路径
+USER_DOCUMENTS_PATH = os.path.join(
+    RESOURCE_PATH, "uploads", "users", "documents"
+)  # 用户上传文件路径
+USER_REPORTS_PATH = os.path.join(
+    RESOURCE_PATH, "database", "users", "reports"
+)  # 用户生成报告路径
+USER_SEARCH_CONSERVATION_PATH = os.path.join(
+    RESOURCE_PATH, "database", "users", "conversation", "search"
+)  # 调研助手对话文件路径
+USER_READ_CONSERVATION_PATH = os.path.join(
+    RESOURCE_PATH, "database", "users", "conversation", "read"
+)  # 论文研读助手对话文件路径
+USER_READ_MAP_PATH = os.path.join(
+    RESOURCE_PATH,
+    "database",
+    "users",
+    "conversation",
+    "read",
+    "file_reading_2_tmp_kb_id_map.json",
 )
-USER_READ_CONSERVATION_PATH = (
-    "resource/database/users/conversation/read"  # 论文研读助手对话文件路径
-)
-USER_READ_MAP_PATH = (
-    "resource/database/users/conversation/read/file_reading_2_tmp_kb_id_map.json"
-)
-USER_SEARCH_MAP_PATH = "resource/database/users/conversation/search/search_record_2_tmp_kb_id_map.json"  # 用户搜索记录与知识库id映射
-PAPERS_PATH = "resource/database/papers/"  # 数据库论文路径
-BATCH_DOWNLOAD_PATH = "resource/database/users/batch_download"  # 批量下载文件路径
-PAPERS_ABS_PATH = "resource/database/papers/abs/"  # 数据库论文摘要路径
+USER_SEARCH_MAP_PATH = os.path.join(
+    RESOURCE_PATH,
+    "database",
+    "users",
+    "conversation",
+    "search",
+    "search_record_2_tmp_kb_id_map.json",
+)  # 用户搜索记录与知识库id映射
+PAPERS_PATH = os.path.join(RESOURCE_PATH, "database", "papers")  # 数据库论文路径
+BATCH_DOWNLOAD_PATH = os.path.join(
+    RESOURCE_PATH, "database", "users", "batch_download"
+)  # 批量下载文件路径
+PAPERS_ABS_PATH = os.path.join(
+    RESOURCE_PATH, "database", "papers", "abs"
+)  # 数据库论文摘要路径
 
-PAPERS_URL = "resource/database/papers/"  # 数据库论文本地URL
-BATCH_DOWNLOAD_URL = "/resource/database/users/batch_download/"  # 批量下载文件本地URL
-USER_DOCUMENTS_URL = "/resource/uploads/users/documents/"  # 用户上传文件本地URL
-CACHE_PATH = "/cache/"  # 缓存路径
+PAPERS_URL = os.path.join("resource", "database", "papers")  # 数据库论文本地URL
+BATCH_DOWNLOAD_URL = os.path.join(
+    "resource", "database", "users", "batch_download"
+)  # 批量下载文件本地URL
+USER_DOCUMENTS_URL = os.path.join(
+    "resource", "uploads", "users", "documents"
+)  # 用户上传文件本地URL
+CACHE_PATH = os.path.join("cache")  # 缓存路径
 
-MAX_Similarity = 0.8  # 最大相似度，介于-1和1之间，不确定
+WIN_WKHTMLTOPDF_PATH = os.path.join(
+    RESOURCE_PATH, "wkhtmltopdf", "bin", "wkhtmltopdf.exe"
+)  # 安装位置
+LINUX_WKHTMLTOPDF_PATH = "/usr/bin/wkhtmltopdf"  # 安装位置
 
-# 远程模型部署开放的API接口
-REMOTE_MODEL_BASE_PATH = "172.17.62.88:7861"
-# 使用openai流式接口调用glm3大模型，不附带知识库
-REMOTE_CHATCHAT_GLM3_OPENAI_PATH = "172.17.62.88:20005"
-
-# 语义检索相关
-VECTOR_DIM = 1024
-LOCAL_VECTOR_DATABASE_PATH = "resource/vector_database_for_search/"
+LOCAL_VECTOR_DATABASE_PATH = os.path.join(RESOURCE_PATH, "vector_database_for_search")
 LOCAL_FAISS_NAME = "paper_index.faiss"
 LOCAL_METADATA_NAME = "paper_metadata.pkl"
 
-WIN_WKHTMLTOPDF_PATH = "resource/wkhtmltopdf/bin/wkhtmltopdf.exe"  # 安装位置
-LINUX_WKHTMLTOPDF_PATH = "/usr/bin/wkhtmltopdf"  # 安装位置
-
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "rest_framework_simplejwt.authentication.JWTAuthentication",  # 确保启用了 JWTAuthentication
     ),
 }
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),  # 设置 access token 的有效期
-    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),  # 设置 refresh token 的有效期
-    "ROTATE_REFRESH_TOKENS": False,  # 是否在每次刷新时生成新的 refresh token
-    "BLACKLIST_AFTER_ROTATION": True,  # 是否在刷新后将旧的 refresh token 加入黑名单
+    "ACCESS_TOKEN_LIFETIME": timedelta(days=1),
+    "REFRESH_TOKEN_LIFETIME": timedelta(days=7),
+    "ROTATE_REFRESH_TOKENS": False,
+    "BLACKLIST_AFTER_ROTATION": True,
+    "USER_ID_FIELD": "user_id",  # 确保与 User 模型的主键字段一致
+    "USER_ID_CLAIM": "user_id",  # 确保 JWT 中的 user_id 声明正确
 }
-
-from rest_framework_simplejwt.settings import api_settings
-
-# 如果你的 User 模型主键字段不是 id，请指定正确的字段名
-api_settings.USER_ID_FIELD = "user_id"  # 替换为你的主键字段名
 
 LOGGING = {
     "version": 1,
@@ -279,6 +295,9 @@ log_dir = os.path.join(BASE_DIR, "logs")
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 
+LOGGING["handlers"]["file"]["filename"] = os.path.join(log_dir, "debug.log")
+
+REMOTE_MODEL_BASE_PATH = "127.0.0.1"
 # CRONJOBS = [
 #     ('0 0 * * *', 'business.api.paper_recommand.refreshRecommendation'),
 # ]

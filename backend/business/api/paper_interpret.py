@@ -3,6 +3,7 @@
 API格式如下：
 api/peper_interpret/...
 """
+
 import asyncio
 import json
 import os
@@ -19,15 +20,15 @@ from business.utils.download_paper import downloadPaper
 
 # 论文研读模块
 
-'''
+"""
     创建文献研读对话：
         上传一个文件，开启一个研读对话，返回 tmp_kb_id
-    
+
     对话记录方式为: [
         {"role": "user", "content": "我们来玩成语接龙，我先来，生龙活虎"},
         {"role": "assistant", "content": "虎头虎脑"},
     ]
-'''
+"""
 
 
 def create_content_disposition(filename):
@@ -41,13 +42,13 @@ def create_content_disposition(filename):
 
 # 删除Tmp_kb的缓存，用于某tmp_kb_id再也不被使用时，避免内存爆炸
 def delete_tmp_kb(tmp_kb_id):
-    delete_tmp_kb_url = f'http://{settings.REMOTE_MODEL_BASE_PATH}/knowledge_base/delete_temp_docs'
+    delete_tmp_kb_url = (
+        f"http://{settings.REMOTE_MODEL_BASE_PATH}/knowledge_base/delete_temp_docs"
+    )
     # headers = {
     #     'Content-Type': 'application/x-www-form-urlencoded'
     # }
-    payload = {
-        "knowledge_id": tmp_kb_id
-    }
+    payload = {"knowledge_id": tmp_kb_id}
     response = requests.post(delete_tmp_kb_url, data=payload)  # data默认是form形式
     if response.status_code == 200:
         return True
@@ -57,6 +58,10 @@ def delete_tmp_kb(tmp_kb_id):
 
 # 建立file_reading和tmp_kb的映射
 def insert_file_2_kb(file_reading_id, tmp_kb_id):
+    """建立file_reading和tmp_kb的映射"""
+    if not os.path.exists(settings.USER_READ_MAP_PATH):
+        os.makedirs(os.path.dirname(settings.USER_READ_MAP_PATH), exist_ok=True)
+
     with open(settings.USER_READ_MAP_PATH, "r") as f:
         f_2_kb_map = json.load(f)
     if file_reading_id in f_2_kb_map:
@@ -71,6 +76,10 @@ def insert_file_2_kb(file_reading_id, tmp_kb_id):
 
 
 def get_tmp_kb_id(file_reading_id):
+    """获取tmp_kb_id"""
+
+    os.makedirs(os.path.dirname(settings.USER_READ_MAP_PATH), exist_ok=True)
+
     with open(settings.USER_READ_MAP_PATH, "r") as f:
         f_2_kb_map = json.load(f)
     # print(f_2_kb_map)
@@ -83,11 +92,11 @@ def get_tmp_kb_id(file_reading_id):
 @require_http_methods(["POST"])
 def create_paper_study(request):
     # 鉴权
-    username = request.session.get('username')
+    username = request.session.get("username")
     print(request.session)
     print(f"!!!!!!!!!!!!!!!!!!!!!!!!!username: {username}")
     if username is None:
-        username = 'sanyuba'
+        username = "sanyuba"
     print(username)
     user = User.objects.filter(username=username).first()
     if user is None:
@@ -109,8 +118,12 @@ def create_paper_study(request):
         file_readings = FileReading.objects.filter(document_id=document_id)
         if file_readings.count() == 0:
             # 创建一段新的filereading对话, 并设置conversation对话路径，创建json文件
-            file_reading = FileReading(user_id=user, document_id=document, title="上传论文研读",
-                                       conversation_path=None)
+            file_reading = FileReading(
+                user_id=user,
+                document_id=document,
+                title="上传论文研读",
+                conversation_path=None,
+            )
         elif file_readings.count() >= 1:
             file_reading = file_readings.first()
         else:
@@ -119,17 +132,20 @@ def create_paper_study(request):
         paper_id = request_data.get("paper_id")
         paper = Paper.objects.get(paper_id=paper_id)
         title = paper.title
-        content_type = '.pdf'
+        content_type = ".pdf"
         local_path = get_paper_local_url(paper)
         if local_path is None:
             return reply.fail(msg="论文无法下载，请联系管理员/换一篇文章研读")
-        file_reading = FileReading(user_id=user, paper_id=paper, title="数据库论文研读",
-                                   conversation_path=None)
+        file_reading = FileReading(
+            user_id=user, paper_id=paper, title="数据库论文研读", conversation_path=None
+        )
     else:
         return reply.fail(msg="类型有误, 金哥我阐述你的梦")
 
     file_reading.save()
-    conversation_path = os.path.join(settings.USER_READ_CONSERVATION_PATH, str(file_reading.id) + ".json")
+    conversation_path = os.path.join(
+        settings.USER_READ_CONSERVATION_PATH, str(file_reading.id) + ".json"
+    )
     file_reading.conversation_path = conversation_path
     file_reading.save()
     # if os.path.exists(conversation_path):
@@ -137,19 +153,28 @@ def create_paper_study(request):
 
     # 此时不存在记录，创建新的
     if not os.path.exists(conversation_path):
-        with open(conversation_path, 'w') as f:
+        os.makedirs(os.path.dirname(conversation_path), exist_ok=True)
+        with open(conversation_path, "w") as f:
             json.dump({"conversation": []}, f, indent=4)
 
-    with open(conversation_path, 'r') as f:
+    with open(conversation_path, "r") as f:
         history = json.load(f)
 
     # 上传到远端服务器, 创建新的临时知识库
-    upload_temp_docs_url = f'http://{settings.REMOTE_MODEL_BASE_PATH}/knowledge_base/upload_temp_docs'
+    upload_temp_docs_url = (
+        f"http://{settings.REMOTE_MODEL_BASE_PATH}/knowledge_base/upload_temp_docs"
+    )
 
-    print(open(local_path, 'rb'))
+    print(open(local_path, "rb"))
     files = [
-        ('files', (title + content_type, open(local_path, 'rb'),
-                   'application/vnd.openxmlformats-officedocument.presentationml.presentation'))
+        (
+            "files",
+            (
+                title + content_type,
+                open(local_path, "rb"),
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ),
+        )
     ]
 
     # headers = {
@@ -162,32 +187,35 @@ def create_paper_study(request):
         v[1].close()
 
     if response.status_code == 200:
-        tmp_kb_id = response.json()['data']['id']
+        tmp_kb_id = response.json()["data"]["id"]
         insert_file_2_kb(str(file_reading.id), tmp_kb_id)
-        return reply.success({'file_reading_id': file_reading.id, "conversation_history": history}, msg="开启文献研读对话成功")
+        return reply.success(
+            {"file_reading_id": file_reading.id, "conversation_history": history},
+            msg="开启文献研读对话成功",
+        )
     else:
         return reply.fail(msg="连接模型服务器失败")
 
 
-'''
+"""
     恢复文献研读对话：
         传入文献研读对话id即可
-'''
+"""
 
 
 @require_http_methods(["POST"])
 def restore_paper_study(request):
     # 鉴权
-    username = request.session.get('username')
+    username = request.session.get("username")
     if username is None:
-        username = 'sanyuba'
+        username = "sanyuba"
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
 
     # 获取filereading与文件路径，重新上传给服务器开启对话
     request_data = json.loads(request.body)
-    file_reading_id = request_data.get('file_reading_id')
+    file_reading_id = request_data.get("file_reading_id")
     fr = FileReading.objects.get(id=file_reading_id)
     if not fr.document_id:
         paper = Paper.objects.get(paper_id=fr.paper_id.get_paper_id())
@@ -195,7 +223,9 @@ def restore_paper_study(request):
         title = paper.title
         content_type = ".pdf"
     else:
-        document = UserDocument.objects.get(document_id=fr.document_id.get_document_id())
+        document = UserDocument.objects.get(
+            document_id=fr.document_id.get_document_id()
+        )
         local_path = document.local_path
         title = document.title
         content_type = document.format
@@ -204,10 +234,18 @@ def restore_paper_study(request):
         return reply.fail(msg="服务器内无本地文件, 请检查")
 
     # 上传到远端服务器, 创建新的临时知识库
-    upload_temp_docs_url = f'http://{settings.REMOTE_MODEL_BASE_PATH}/knowledge_base/upload_temp_docs'
+    upload_temp_docs_url = (
+        f"http://{settings.REMOTE_MODEL_BASE_PATH}/knowledge_base/upload_temp_docs"
+    )
     files = [
-        ('files', (title + content_type, open(local_path, 'rb'),
-                   'application/vnd.openxmlformats-officedocument.presentationml.presentation'))
+        (
+            "files",
+            (
+                title + content_type,
+                open(local_path, "rb"),
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ),
+        )
     ]
 
     # headers = {
@@ -221,27 +259,34 @@ def restore_paper_study(request):
 
     # 返回结果, 需要将历史对话一起返回
     if response.status_code == 200:
-        tmp_kb_id = response.json()['data']['id']
+        tmp_kb_id = response.json()["data"]["id"]
         insert_file_2_kb(str(file_reading_id), tmp_kb_id)
         # 若删除过历史对话, 则再创建一个文件
         if not os.path.exists(fr.conversation_path):
-            with open(fr.conversation_path, 'w') as f:
+            os.makedirs(os.path.dirname(fr.conversation_path), exist_ok=True)
+            with open(fr.conversation_path, "w") as f:
                 json.dump({"conversation": []}, f, indent=4)
 
         # 读取历史对话记录
-        with open(fr.conversation_path, 'r') as f:
-            conversation_history = json.load(f)  # 使用 json.load() 方法将 JSON 数据转换为字典
+        with open(fr.conversation_path, "r") as f:
+            conversation_history = json.load(
+                f
+            )  # 使用 json.load() 方法将 JSON 数据转换为字典
 
         return reply.success(
-            {'file_reading_id': file_reading_id, 'conversation_history': conversation_history},
-            msg="恢复文献研读对话成功")
+            {
+                "file_reading_id": file_reading_id,
+                "conversation_history": conversation_history,
+            },
+            msg="恢复文献研读对话成功",
+        )
     else:
         return reply.fail(msg="连接模型服务器失败")
 
 
-'''
+"""
     异步测试
-'''
+"""
 
 
 @require_http_methods(["POST"])
@@ -251,9 +296,9 @@ async def async_test(request):
     print("Task completed.")
 
 
-'''
+"""
     获取本地url
-'''
+"""
 
 
 def get_paper_local_url(paper):
@@ -261,7 +306,7 @@ def get_paper_local_url(paper):
     if not local_path:
         original_url = paper.original_url
         # 将路径中的abs修改为pdf
-        original_url = original_url.replace('abs', 'pdf')
+        original_url = original_url.replace("abs", "pdf")
         # 访问url，下载文献到服务器
         filename = str(paper.paper_id)
         local_path = downloadPaper(original_url, filename)
@@ -270,21 +315,21 @@ def get_paper_local_url(paper):
     return local_path
 
 
-'''
+"""
     获取文献本地url, 无则下载
-'''
+"""
 
 
 def get_paper_url(request):
     # 鉴权
-    username = request.session.get('username')
+    username = request.session.get("username")
     if username is None:
-        username = 'sanyuba'
+        username = "sanyuba"
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
 
-    paper_id = request.GET.get('paper_id')
+    paper_id = request.GET.get("paper_id")
     paper = Paper.objects.get(paper_id=paper_id)
     paper_local_url = get_paper_local_url(paper)
     if paper_local_url is None:
@@ -294,41 +339,50 @@ def get_paper_url(request):
 
 def do_file_chat(conversation_history, query, tmp_kb_id):
     # 将历史记录与本次对话发送给服务器, 获取对话结果
-    file_chat_url = f'http://{settings.REMOTE_MODEL_BASE_PATH}/chat/file_chat'
-    headers = {
-        'Content-Type': 'application/json'
-    }
+    file_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/file_chat"
+    headers = {"Content-Type": "application/json"}
     if len(conversation_history) != 0:
         # 有问题
-        payload = json.dumps({
-            "query": query,
-            "knowledge_id": tmp_kb_id,
-            "history": conversation_history[-10:],  # 传10条历史记录
-            "prompt_name": "text"  # 使用历史记录对话模式
-        })
+        payload = json.dumps(
+            {
+                "query": query,
+                "knowledge_id": tmp_kb_id,
+                "history": conversation_history[-10:],  # 传10条历史记录
+                "prompt_name": "text",  # 使用历史记录对话模式
+            }
+        )
 
     else:
-        payload = json.dumps({
-            "query": query,
-            "knowledge_id": tmp_kb_id,
-            "prompt_name": "default"  # 使用普通对话模式
-        })
+        payload = json.dumps(
+            {
+                "query": query,
+                "knowledge_id": tmp_kb_id,
+                "prompt_name": "default",  # 使用普通对话模式
+            }
+        )
         # print(payload)
 
     def _get_ai_reply(payload):
-        response = requests.request("POST", file_chat_url, data=payload, headers=headers, stream=False)
+        response = requests.request(
+            "POST", file_chat_url, data=payload, headers=headers, stream=False
+        )
         ai_reply = ""
         origin_docs = []
         # print(response)
         for line in response.iter_lines():
             if line:
-                decoded_line = line.decode('utf-8')
-                if decoded_line.startswith('data'):
-                    data = decoded_line.replace('data: ', '')
+                decoded_line = line.decode("utf-8")
+                if decoded_line.startswith("data"):
+                    data = decoded_line.replace("data: ", "")
                     data = json.loads(data)
                     ai_reply += data["answer"]
                     for doc in data["docs"]:
-                        doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                        doc = (
+                            str(doc)
+                            .replace("\n", " ")
+                            .replace("<span style='color:red'>", "")
+                            .replace("</span>", "")
+                        )
                         origin_docs.append(doc)
         return ai_reply, origin_docs
 
@@ -339,16 +393,18 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
     def _get_prob_paper_study_question():
 
         # empty模板不含任何知识库信息
-        payload = json.dumps({
-            "query": query,
-            "knowledge_id": tmp_kb_id,
-            "history": conversation_history[-4:],
-            "prompt_name": "question",  # 使用问题模式
-            "max_tokens": 50,
-            "temperature": 0.4
-        })
+        payload = json.dumps(
+            {
+                "query": query,
+                "knowledge_id": tmp_kb_id,
+                "history": conversation_history[-4:],
+                "prompt_name": "question",  # 使用问题模式
+                "max_tokens": 50,
+                "temperature": 0.4,
+            }
+        )
         question_reply, _ = _get_ai_reply(payload)
-        question_reply = re.sub(r'\d. ', '', question_reply).split("\n")[:2]
+        question_reply = re.sub(r"\d. ", "", question_reply).split("\n")[:2]
         question_reply.append("告诉我更多")
         return question_reply
 
@@ -358,90 +414,109 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
 
 def add_conversation_history(conversation_history, query, ai_reply, conversation_path):
     # 添加历史记录并保存
-    conversation_history.extend([{
-        "role": "user",
-        "content": query
-    }, {
-        "role": "assistant",
-        "content": ai_reply if ai_reply != "" else "此问题由于某原因无回答"
-    }])
+    conversation_history.extend(
+        [
+            {"role": "user", "content": query},
+            {
+                "role": "assistant",
+                "content": ai_reply if ai_reply != "" else "此问题由于某原因无回答",
+            },
+        ]
+    )
 
-    with open(conversation_path, 'w') as f:
+    with open(conversation_path, "w") as f:
         json.dump({"conversation": conversation_history}, f, indent=4)
 
 
-'''
+"""
     论文研读 Key! 此时AI回复为非流式输出, 可能浪费时间, alpha版本先这样
-'''
+"""
 
 
 @require_http_methods(["POST"])
 def do_paper_study(request):
     # 鉴权
-    username = request.session.get('username')
+    username = request.session.get("username")
     if username is None:
-        username = 'sanyuba'
+        username = "sanyuba"
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
 
     request_data = json.loads(request.body)
-    query = request_data.get('query')  # 本次询问对话
-    file_reading_id = request_data.get('file_reading_id')
+    query = request_data.get("query")  # 本次询问对话
+    file_reading_id = request_data.get("file_reading_id")
     fr = FileReading.objects.get(id=file_reading_id)
     tmp_kb_id = get_tmp_kb_id(file_reading_id=file_reading_id)  # 临时知识库id
     if tmp_kb_id is None:
         return reply.fail(msg="请先创建研读会话")
     # 加载历史记录
-    with open(fr.conversation_path, 'r') as f:
+    if not os.path.exists(fr.conversation_path):
+        os.makedirs(os.path.dirname(fr.conversation_path), exist_ok=True)
+        with open(fr.conversation_path, "w") as f:
+            json.dump({"conversation": []}, f, indent=4)
+
+    with open(fr.conversation_path, "r") as f:
         conversation_history = json.load(f)
 
     print(tmp_kb_id)
-    conversation_history = list(conversation_history.get('conversation'))  # List[Dict]
+    conversation_history = list(conversation_history.get("conversation"))  # List[Dict]
     # print(conversation_history, query, tmp_kb_id)
-    ai_reply, origin_docs, question_reply = do_file_chat(conversation_history, query, tmp_kb_id)
-    add_conversation_history(conversation_history, query, ai_reply, fr.conversation_path)
-    return reply.success({"ai_reply": ai_reply, "docs": origin_docs, "prob_question": question_reply}, msg="成功")
+    ai_reply, origin_docs, question_reply = do_file_chat(
+        conversation_history, query, tmp_kb_id
+    )
+    add_conversation_history(
+        conversation_history, query, ai_reply, fr.conversation_path
+    )
+    return reply.success(
+        {"ai_reply": ai_reply, "docs": origin_docs, "prob_question": question_reply},
+        msg="成功",
+    )
 
 
-'''
+"""
     论文研读：重新生成回复
-        
-'''
+
+"""
 
 
 @require_http_methods(["POST"])
 def re_do_paper_study(request):
     # 鉴权
-    username = request.session.get('username')
+    username = request.session.get("username")
     if username is None:
-        username = 'sanyuba'
+        username = "sanyuba"
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
 
     request_data = json.loads(request.body)
-    file_reading_id = request_data.get('file_reading_id')
+    file_reading_id = request_data.get("file_reading_id")
     tmp_kb_id = get_tmp_kb_id(file_reading_id=file_reading_id)
     if tmp_kb_id is None:
         return reply.fail(msg="请先创建研读会话")
 
     fr = FileReading.objects.get(id=file_reading_id)
     conversation_path = fr.conversation_path
-    with open(fr.conversation_path, 'r') as f:
+    with open(fr.conversation_path, "r") as f:
         conversation_history = json.load(f)
 
-    conversation_history = list(conversation_history.get('conversation'))
+    conversation_history = list(conversation_history.get("conversation"))
     if len(conversation_history) < 2:
         return reply.fail(msg="无法找到您的上一条对话")
     # 获取最后一次的询问, 并去除最后一次的对话记录
-    query = conversation_history[-2].get('content')
+    query = conversation_history[-2].get("content")
     conversation_history = conversation_history[:-2]
 
     # 同 do_paper_study
-    ai_reply, origin_docs, question_reply = do_file_chat(conversation_history, query, tmp_kb_id)
+    ai_reply, origin_docs, question_reply = do_file_chat(
+        conversation_history, query, tmp_kb_id
+    )
     add_conversation_history(conversation_history, query, ai_reply, conversation_path)
-    return reply.success({"ai_reply": ai_reply, "docs": origin_docs, "prob_question": question_reply}, msg="成功")
+    return reply.success(
+        {"ai_reply": ai_reply, "docs": origin_docs, "prob_question": question_reply},
+        msg="成功",
+    )
 
 
 # @require_http_methods(["POST"])
@@ -495,16 +570,18 @@ def re_do_paper_study(request):
 @require_http_methods(["POST"])
 def clear_conversation(request):
     # 鉴权
-    username = request.session.get('username')
+    username = request.session.get("username")
     if username is None:
-        username = 'sanyuba'
+        username = "sanyuba"
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
 
     request_data = json.loads(request.body)
-    file_reading_id = request_data.get('file_reading_id')
+    file_reading_id = request_data.get("file_reading_id")
     fr = FileReading.objects.get(id=file_reading_id)
-    with open(fr.conversation_path, 'w') as f:
+    os.makedirs(os.path.dirname(fr.conversation_path), exist_ok=True)
+    with open(fr.conversation_path, "w") as f:
+
         json.dump({"conversation": []}, f, indent=4)
     return reply.success(msg="清除对话历史成功")

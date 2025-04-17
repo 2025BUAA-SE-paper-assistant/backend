@@ -1,3 +1,4 @@
+import logging
 import requests
 from backend.settings import PAPERS_PATH
 import os
@@ -15,7 +16,7 @@ def downloadPaper(url, filename):
         return path
     response = requests.get(url)
     if response.status_code == 200:
-        print(filename)
+        logging.info(f"下载成功: {url}")
         if not filename.endswith('.pdf'):
             filepath = os.path.join(PAPERS_PATH, filename + '.pdf')
         else:
