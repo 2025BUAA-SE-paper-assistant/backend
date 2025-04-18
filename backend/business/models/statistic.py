@@ -43,3 +43,18 @@ class KeywordStat(models.Model):
 
     def __str__(self):
         return f"{self.keyword} ({self.period}): {self.count}"
+
+
+# 用户活跃行为统计
+class UserActivityStat(models.Model):
+    user_id = models.CharField(max_length=100)  # 用户ID
+    activity_point  = models.IntegerField(default=0)  # 活跃权重
+    timestamp = models.DateTimeField(auto_now_add=True)  # 活动发生的时间
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['user_id', 'timestamp']),  # 优化查询速度
+        ]
+
+    def __str__(self):
+        return f"{self.user_id} - {self.activity_point} at {self.timestamp}"

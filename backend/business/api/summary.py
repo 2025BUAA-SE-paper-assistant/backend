@@ -150,7 +150,8 @@ def get_summary_status(request):
     return success({"status": "生成成功"})
 
 
-@require_http_methods(["POST"])
+from business.utils.activity import update_user_activity
+@require_http_methods(['POST'])
 def generate_summary(request):
     """
     生成综述
@@ -163,11 +164,13 @@ def generate_summary(request):
     from business.models import SummaryReport, User
 
     user = User.objects.filter(username=username).first()
-    report = SummaryReport.objects.create(
-        user_id=user, status=SummaryReport.STATUS_PENDING
-    )
-    report.title = "综述" + str(report.report_id)
-    p = settings.USER_REPORTS_PATH + "/" + str(report.report_id) + ".md"
+
+    if user is None:
+        return fail(msg="请先正确登录")
+    update_user_activity(user.user_id, type='summarize')
+    report = SummaryReport.objects.create(user_id=user, status=SummaryReport.STATUS_PENDING)
+    report.title = '综述' + str(report.report_id)
+    p = settings.USER_REPORTS_PATH + '/' + str(report.report_id) + '.md'
     report.report_path = p
     report.save()
     try:
@@ -263,13 +266,13 @@ def ask_ai_single_paper(payload):
                 data = json.loads(data)
                 if "answer" in data:
                     ai_reply += data["answer"]
-                elif "docs" in data:
+                if "docs" in data:
                     for doc in data["docs"]:
                         doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
                         origin_docs.append(doc)
     return ai_reply, origin_docs
 
-
+from business.utils.activity import update_user_activity
 def create_abstract_report(request):
     request_data = json.loads(request.body)
     document_id = request_data.get("document_id")

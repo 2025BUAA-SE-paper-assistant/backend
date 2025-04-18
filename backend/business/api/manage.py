@@ -542,7 +542,7 @@ def server_status(request):
         )
     elif mode == 2:
         # 模型服务器
-        url = "http://10.2.16.28:8001/gpu_usage"
+        url = 'http://10.2.16.28:2336'
         try:
             res = requests.get(url)
             res.raise_for_status()  # 检查是否有 HTTP 错误
@@ -553,7 +553,8 @@ def server_status(request):
         return reply.fail(msg="mode参数错误")
 
 
-@require_http_methods("POST")
+from business.utils.activity import update_user_activity
+@require_http_methods('POST')
 def record_visit(request):
     """记录用户访问"""
     # 需要用户鉴权
@@ -576,6 +577,7 @@ def record_visit(request):
         timestamp__lt=start_of_hour + datetime.timedelta(minutes=30),
     ).first():
         UserVisit(ip_address=ip_address, timestamp=now).save()
+        update_user_activity(user.user_id, type='login')  # 更新用户活跃度
 
     return reply.success(msg="登记成功")
 
@@ -637,3 +639,31 @@ def word_trend(request):
         for item in hot_keywords
     ]
     return reply.success(data={'hot_search':data}, msg="热搜词获取成功")
+
+from datetime import timedelta
+from business.models.statistic import UserActivityStat
+from django.utils import timezone
+# 获取所有用户的活跃时段统计，按时段统计活跃度
+@require_http_methods('GET')
+def hours_activity(request):
+    end_time = timezone.now()
+    start_time = end_time - timedelta(days=7)
+    # 构建24小时基础结构
+    hourly_data = {hour: 0 for hour in range(24)} 
+    # 查询数据库
+    activities = (
+        UserActivityStat.objects
+        .filter(timestamp__gte=start_time)
+        .annotate(hour=TruncHour('timestamp', tzinfo=timezone.utc))
+        .values('hour')
+        .annotate(total_points=Sum('activity_point'))
+        .order_by('hour')
+    )
+    # 填充查询结果
+    for entry in activities:
+        hour_utc = entry['hour'].hour
+        hourly_data[hour_utc] = entry['total_points']
+
+    ordered_result = [hourly_data[hour] for hour in range(24)]
+    return reply.success(data={'time_activity':ordered_result}, msg="时段活跃度获取成功")
+

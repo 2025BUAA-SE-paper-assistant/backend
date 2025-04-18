@@ -31,7 +31,7 @@ from backend.settings import (
 if not os.path.exists(BATCH_DOWNLOAD_PATH):
     os.makedirs(BATCH_DOWNLOAD_PATH)
 
-
+from business.utils.activity import update_user_activity
 def like_paper(request):
     """
     点赞/取消点赞文献
@@ -56,7 +56,9 @@ def like_paper(request):
             paper.like_count += 1
             user.save()
             paper.save()
-            return JsonResponse({"message": "点赞成功", "is_success": True})
+
+            update_user_activity(user.user_id, type='like')
+            return JsonResponse({'message': '点赞成功', 'is_success': True})
         else:
             return JsonResponse(
                 {"error": "用户或文献不存在", "is_success": False}, status=400
@@ -174,7 +176,7 @@ def report_comment(request):
     else:
         return JsonResponse({"error": "请求方法错误", "is_success": False}, status=400)
 
-
+from business.utils.activity import update_user_activity
 def comment_paper(request):
     """
     用户评论（含一级、二级评论）
@@ -191,6 +193,7 @@ def comment_paper(request):
         user = User.objects.filter(username=username).first()
         paper = Paper.objects.filter(paper_id=paper_id).first()
         if user and paper:
+            update_user_activity(user.user_id, type='comment')
             if comment_level == 1:
                 comment = FirstLevelComment(user_id=user, paper_id=paper, text=text)
                 comment.save()
@@ -317,7 +320,7 @@ def get_second_comment(request):
     else:
         return JsonResponse({"error": "请求方法错误", "is_success": False}, status=400)
 
-
+from business.utils.activity import update_user_activity
 def like_comment(request):
     """
     点赞评论/取消点赞评论
@@ -336,6 +339,7 @@ def like_comment(request):
             comment = SecondLevelComment.objects.filter(comment_id=comment_id).first()
         if user and comment:
             liked = comment.liked_by_users.filter(user_id=user.user_id).first()
+            update_user_activity(user.user_id, type='like')
             # 取消点赞
             if liked:
                 comment.like_count -= 1
