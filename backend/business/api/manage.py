@@ -453,7 +453,7 @@ def server_status(request):
         return reply.success(data=system_info.get_system_info(), msg="web 服务器硬件信息获取成功")
     elif mode == 2:
         # 模型服务器
-        url = 'http://172.17.62.88:8001/gpu_usage'
+        url = 'http://10.2.16.28:2336'
         try:
             res = requests.get(url)
             res.raise_for_status()  # 检查是否有 HTTP 错误

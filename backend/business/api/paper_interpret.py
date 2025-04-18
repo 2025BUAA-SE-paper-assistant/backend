@@ -330,7 +330,7 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
                     data = json.loads(data)
                     if "answer" in data:
                         ai_reply += data["answer"]
-                    elif "docs" in data:
+                    if "docs" in data:
                         for doc in data["docs"]:
                             doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
                             origin_docs.append(doc)

@@ -337,7 +337,7 @@ def kb_ask_ai(payload):
                 data = json.loads(data)
                 if "answer" in data:
                     ai_reply += data["answer"]
-                elif "docs" in data:
+                if "docs" in data:
                     for doc in data["docs"]:
                         doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
                         origin_docs.append(doc)
@@ -956,7 +956,7 @@ def kb_ask_ai(payload):
                 data = json.loads(data)
                 if "answer" in data:
                     ai_reply += data["answer"]
-                elif "docs" in data:
+                if "docs" in data:
                     for doc in data["docs"]:
                         doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
                         origin_docs.append(doc)
