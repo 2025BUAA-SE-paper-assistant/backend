@@ -9,6 +9,8 @@ import time
 import zipfile
 import os
 from django.http import JsonResponse
+from business.utils.reply import content_error
+from scripts.check import GreenCheck
 from business.models import (
     User,
     Paper,
@@ -183,6 +185,9 @@ def comment_paper(request):
         paper_id = data.get("paper_id")
         comment_level = data.get("comment_level")  # 1 / 2
         text = data.get("comment")
+        green_check = GreenCheck()
+        if not green_check.check(text):
+            return content_error()
         user = User.objects.filter(username=username).first()
         paper = Paper.objects.filter(paper_id=paper_id).first()
         if user and paper:
@@ -448,6 +453,7 @@ def get_paper_info(request):
                 "score_count": paper.score_count,
                 "original_url": paper.original_url,
                 "is_success": True,
+                "paragraph": paper.paragraph,
             }
             return JsonResponse(response, status=200)
         else:

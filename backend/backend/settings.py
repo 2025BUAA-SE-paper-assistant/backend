@@ -321,9 +321,6 @@ if not os.path.exists(log_dir):
 
 
 LOGGING["handlers"]["file"]["filename"] = os.path.join(log_dir, "debug.log")
-
-REMOTE_MODEL_BASE_PATH = "127.0.0.1"
-
 CHANNEL_LAYERS = {
     "default": {
         "BACKEND": "channels_redis.core.RedisChannelLayer",

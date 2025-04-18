@@ -1,6 +1,8 @@
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
+from business.utils.reply import content_error
+from scripts.check import GreenCheck
 from business.models.remark import Remark
 from business.models.paper import Paper
 from django.db.models import Q
@@ -13,6 +15,9 @@ def create_remark(request):
     user = request.user
     paper_id = request.POST.get("paper_id")
     content = request.POST.get("content")
+    greencheck = GreenCheck()
+    if not greencheck.check(content):
+        return content_error()
     visibility = request.POST.get("visibility", "private")
     paragraph_id = request.POST.get("paragraph_id")
     paper = Paper.objects.filter(paper_id=paper_id).first()
@@ -100,6 +105,9 @@ def update_remark(request, remark_id):
         if not remark:
             return JsonResponse({"error": "备注未找到或无权限"}, status=403)
         content = request.POST.get("content")
+        greencheck = GreenCheck()
+        if not greencheck.check(content):
+            return content_error()
         visibility = request.POST.get("visibility")
         if not content:
             content = remark.content

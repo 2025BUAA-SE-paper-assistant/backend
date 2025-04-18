@@ -151,11 +151,9 @@ def create_paper_study(request):
     # if os.path.exists(conversation_path):
     #     os.remove(conversation_path)
 
-    # 此时不存在记录，创建新的
-    if not os.path.exists(conversation_path):
-        os.makedirs(os.path.dirname(conversation_path), exist_ok=True)
-        with open(conversation_path, "w") as f:
-            json.dump({"conversation": []}, f, indent=4)
+
+    with open(conversation_path, "w") as f:
+        json.dump({"conversation": []}, f, indent=4)
 
     with open(conversation_path, "r") as f:
         history = json.load(f)
@@ -334,7 +332,12 @@ def get_paper_url(request):
     paper_local_url = get_paper_local_url(paper)
     if paper_local_url is None:
         return reply.fail(msg="文献下载失败，请检查网络或联系管理员")
-    return reply.success({"local_url": "/" + paper_local_url}, msg="success")
+    response ={
+            "local_url": "/" + paper_local_url,
+            "paragraph": paper.paragraph,
+            "message": "success",
+        }
+    return reply.success(response, msg="success")
 
 
 def do_file_chat(conversation_history, query, tmp_kb_id):

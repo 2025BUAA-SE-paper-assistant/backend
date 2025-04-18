@@ -281,19 +281,19 @@ def create_abstract_report(request):
     user = User.objects.filter(username=username).first()
     if user is None:
         return fail(msg="请先正确登录")
-    if len(document_id) != 0:
+    if document_id:
         document = UserDocument.objects.get(document_id=document_id)
         # 获取服务器本地的path
         local_path = document.local_path
         content_type = document.format
         title = document.title
-    elif len(paper_id) != 0:
+    elif paper_id:
         p = Paper.objects.filter(paper_id=paper_id).first()
         pdf_url = p.original_url.replace("abs/", "pdf/") + ".pdf"
         local_path = settings.PAPERS_URL + str(p.paper_id) + ".pdf"
         print(local_path)
         print(pdf_url)
-        if os.path.exists(local_path) == False:
+        if not os.path.exists(local_path):
             # 下载下来
             downloadPaper(url=pdf_url, filename=str(p.paper_id))
         content_type = ".pdf"

@@ -1,7 +1,10 @@
 import logging
 import requests
+from business.models.paper import Paper
 from backend.settings import PAPERS_PATH
 import os
+import fitz
+
 
 if not os.path.exists(PAPERS_PATH):
     os.makedirs(PAPERS_PATH)
@@ -23,6 +26,20 @@ def downloadPaper(url, filename):
             filepath = os.path.join(PAPERS_PATH, filename)
         with open(filepath, 'wb') as f:
             f.write(response.content)
+        doc = fitz.open(
+            filepath
+        )
+        paper = Paper.objects.get(paper_id = filename)
+        paragrahs = []
+        for page_num in range(doc.page_count):
+            page = doc[page_num]
+            blocks = page.get_text("blocks")
+            for i, block in enumerate(blocks):
+                paragrahs.append(block)
+
+        paper.paragraph = paragrahs
+        paper.save()
+
         return filepath
     else:
         print('下载失败')
