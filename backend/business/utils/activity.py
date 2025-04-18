@@ -14,7 +14,7 @@ acitivity_points = {
     'summarize': 3,  # 摘要总结 
     'like':1 #点赞
 }
-# TODO 更新摘要相关
+# TODO 更新批注相关
 def update_user_activity(user_id, type='login'):
     """
     更新用户活跃度
