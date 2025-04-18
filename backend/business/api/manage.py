@@ -574,3 +574,11 @@ def hours_activity(request):
     ordered_result = [hourly_data[hour] for hour in range(24)]
     return reply.success(data={'time_activity':ordered_result}, msg="时段活跃度获取成功")
 
+@require_http_methods('GET')
+def dau(request):
+    end_time = timezone.now()
+    start_time = end_time - timedelta(days=1)
+    dau_count = UserActivityStat.objects.filter(
+        timestamp__range=(start_time, end_time)
+    ).values('user_id').distinct().count()
+    return reply.success(data={'dau':dau_count}, msg="日活用户数获取成功")
