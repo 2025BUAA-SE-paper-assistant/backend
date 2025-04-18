@@ -58,3 +58,5 @@ CREATE DATABASE phds;
 USE eppdb;
 
 mysql -u root -p eppdb < /root/nbackend/2024_EPP.sql
+
+set PYTHONPATH=E:\code\ruangong\backend\backend

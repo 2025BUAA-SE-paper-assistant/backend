@@ -1,10 +1,10 @@
 import openai
 
-server_ip = '172.17.62.88'
-url = f'http://172.17.62.88:20005'
+server_ip = "10.2.16.28"
+url = f"http://10.2.16.28:2338"
 
 if __name__ == "__main__":
-    openai.api_base = f'http://{server_ip}:20005/v1'
+    openai.api_base = f"http://{server_ip}:2338/v1"
     openai.api_key = "none"
     history = []
     while True:
@@ -13,10 +13,10 @@ if __name__ == "__main__":
         if user_input.lower() == "exit":
             break
         response = openai.ChatCompletion.create(
-            model="chatglm3-6b",
-            messages=history,
-            stream=False
+            model="chatglm3-6b", messages=history, stream=False
         )
         if response.choices[0].message.role == "assistant":
             print("ChatGLM3-6B：", response.choices[0].message.content)
-            history.append({"role": "assistant", "content": response.choices[0].message.content})
+            history.append(
+                {"role": "assistant", "content": response.choices[0].message.content}
+            )

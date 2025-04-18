@@ -11,7 +11,7 @@ class AbstractReport(models.Model):
         - report_path          摘要报告文件地址
         - status               状态
     """
-    
+
     STATUS_PENDING = 'P'
     STATUS_IN_PROGRESS = 'IP'
     STATUS_COMPLETED = 'C'
@@ -22,7 +22,7 @@ class AbstractReport(models.Model):
         (STATUS_COMPLETED, '已生成'),
         (STATUS_TIMEOUT, '超时')
     ]
-    
+
     file_local_path = models.CharField(max_length=255, primary_key=True)
     report_path = models.CharField(max_length=255, unique=True)
     status = models.CharField(

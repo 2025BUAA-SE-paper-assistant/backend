@@ -15,6 +15,9 @@ from business.models import SummaryReport
 from business.models import FileReading
 from business.models import Notification
 from business.utils import reply
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
 
 if not os.path.exists(USER_READ_CONSERVATION_PATH):
     os.makedirs(USER_READ_CONSERVATION_PATH)
@@ -22,11 +25,12 @@ if not os.path.exists(USER_REPORTS_PATH):
     os.makedirs(USER_REPORTS_PATH)
 
 
-@require_http_methods('GET')
+@api_view(["GET"])
 def user_info(request):
     """ 用户基础信息 """
     username = request.session.get('username')
     user = User.objects.filter(username=username).first()
+    # user = request.user  # 使用 request.user 获取当前用户
     if user:
         return reply.success(data={'user_id': user.user_id,
                                    'username': user.username,

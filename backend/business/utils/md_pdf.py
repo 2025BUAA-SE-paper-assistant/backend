@@ -23,5 +23,5 @@ def md2pdf(input_filename, output_filename):
     else:
         with open(input_filename, 'r', encoding='utf-8') as f:
             html_text = markdown(f.read(), output_format='html4')
-    
+
         pdfkit.from_string(html_text, output_filename, configuration = config, options={'encoding': 'UTF-8', 'quiet': ''})
