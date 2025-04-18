@@ -53,5 +53,15 @@ for line in response.iter_lines():
         data = json.loads(decoded_line.replace('data: ', ''))
         ans += data['text']
 
+pattern = r"问题\d+\.\s*(.*?)？"
+
+# 捕获所有问题的内容
+questions = re.findall(pattern, ans) #生成问题list
+recommend_questions = []
+for i, question in enumerate(questions, 1):
+    recommend_questions.append(question)
 print("历史: ", history)
 print("推荐: ", ans)
+print("问题捕获: ", questions)
+# print(type(questions), type(recommend_questions))
+print("推荐问题: ", recommend_questions)
