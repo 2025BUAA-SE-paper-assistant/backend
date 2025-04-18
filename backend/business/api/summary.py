@@ -27,7 +27,7 @@ def queryGLM(msg: str, history=None) -> str:
     对chatGLM3-6B发出一次单纯的询问
     """
     print(msg)
-    chat_chat_url = "http://10.2.16.28:7861/chat/chat"
+    chat_chat_url = "http://10.2.16.28:2334/chat/chat"
     headers = {"Content-Type": "application/json"}
     payload = json.dumps({"query": msg, "prompt_name": "default", "temperature": 0.3})
 
@@ -52,12 +52,10 @@ def queryGLM(msg: str, history=None) -> str:
                 continue
             print(decoded_line)
             if decoded_line.startswith('data'):
-                data = json.loads(decoded_line.replace('data: ', ''))
-            else:
-                data = decoded_line
-        if data is None:
-            return "错误: 无法获取响应"
-        return data['text']
+                data = json.loads(decoded_line.replace('data:', ''))
+        if isinstance(data, dict) and 'text' in data:
+            return data['text']
+        return "错误: 无法获取响应"
     except requests.exceptions.ChunkedEncodingError as e:
         print(f"ChunkedEncodingError: {e}")
         return "错误: 响应提前结束"
@@ -121,8 +119,8 @@ def get_summary(paper_ids, report_id):
         summary += "# 结论\n" + conclusion + "\n"
         # 修改语病，更加通顺
         response = summary
+        os.makedirs(os.path.dirname(settings.USER_REPORTS_PATH), exist_ok=True)
         md_path = settings.USER_REPORTS_PATH + "/" + str(report.report_id) + ".md"
-        os.makedirs(md_path, exist_ok=True)
         with open(md_path, "w", encoding="utf-8") as f:
             f.write(response)
         report.report_path = md_path
@@ -499,7 +497,6 @@ class abs_gen_thread(threading.Thread):
         print(summary)
         response = summary
         print(response)
-        os.makedirs(os.path.dirname(self.report_path), exist_ok=True)
         with open(self.report_path, "w", encoding="utf-8") as f:
             f.write(response)
         ar.report_path = self.report_path

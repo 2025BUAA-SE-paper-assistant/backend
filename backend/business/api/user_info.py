@@ -347,7 +347,6 @@ def get_summary_report(request):
     report_id = request.GET.get('report_id')
     report = SummaryReport.objects.filter(report_id=report_id, user_id=user).first()
     if report:
-        os.makedirs(os.path.dirname(report.report_path), exist_ok=True)
         with open(report.report_path, 'r', encoding='utf-8') as f:
             content = f.read()
         return reply.success(data={'summary': content}, msg='综述报告获取成功')

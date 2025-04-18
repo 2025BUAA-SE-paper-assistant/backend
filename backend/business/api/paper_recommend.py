@@ -39,7 +39,7 @@ def queryGLM(msg: str, history=None) -> str:
     对chatGLM3-6B发出一次单纯的询问
     """
     print(msg)
-    chat_chat_url = "http://10.2.16.28:7861/chat/chat"
+    chat_chat_url = "http://10.2.16.28:2334/chat/chat"
     headers = {"Content-Type": "application/json"}
     payload = json.dumps({"query": msg, "prompt_name": "default", "temperature": 0.3})
 
@@ -59,17 +59,17 @@ def queryGLM(msg: str, history=None) -> str:
 
         data = None
         for line in response.iter_lines():
-            decoded_line = line.decode('utf-8')
-            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+            decoded_line = line.decode("utf-8")
+            if decoded_line.startswith(": ping"):  # 忽略以 ":" 开头的行
                 continue
             print(decoded_line)
-            if decoded_line.startswith('data'):
-                data = json.loads(decoded_line.replace('data: ', ''))
+            if decoded_line.startswith("data"):
+                data = json.loads(decoded_line.replace("data: ", ""))
             else:
                 data = decoded_line
         if data is None:
             return "错误: 无法获取响应"
-        return data['text']
+        return data["text"]
     except requests.exceptions.ChunkedEncodingError as e:
         print(f"ChunkedEncodingError: {e}")
         return "错误: 响应提前结束"

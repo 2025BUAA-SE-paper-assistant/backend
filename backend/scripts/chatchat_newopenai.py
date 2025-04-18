@@ -1,11 +1,11 @@
 server_ip = "10.2.16.28"
-url = f"http://10.2.16.28:20005"
+url = f"http://10.2.16.28:2338"
 
 from openai import OpenAI
 
 client = OpenAI(
     api_key="none",
-    base_url="http://{server_ip}:20005/v1",
+    base_url="http://{server_ip}:2338/v1",
 )
 
 completion = client.chat.completions.create(

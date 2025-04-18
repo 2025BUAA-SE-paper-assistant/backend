@@ -1,10 +1,10 @@
 import openai
 
 server_ip = "10.2.16.28"
-url = f"http://10.2.16.28:20005"
+url = f"http://10.2.16.28:2338"
 
 if __name__ == "__main__":
-    openai.api_base = f"http://{server_ip}:20005/v1"
+    openai.api_base = f"http://{server_ip}:2338/v1"
     openai.api_key = "none"
     history = []
     while True:

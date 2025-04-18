@@ -35,7 +35,6 @@ def upload_paper(request):
             store_name = file_name + time.strftime('%Y%m%d%H%M%S') + '_%d' % random.randint(0, 100) + file_ext
             file_size = file.size
             file_path = USER_DOCUMENTS_PATH + '/' + store_name
-            os.makedirs(os.path.dirname(file_path), exist_ok=True)
             with open(file_path, 'wb') as f:
                 for chunk in file.chunks():
                     f.write(chunk)

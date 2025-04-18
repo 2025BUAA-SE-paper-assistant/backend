@@ -11,7 +11,6 @@ import Levenshtein
 
 def insert_search_record_2_kb(search_record_id, tmp_kb_id):
     search_record_id = str(search_record_id)
-    os.makedirs(os.path.dirname(settings.USER_SEARCH_MAP_PATH), exist_ok=True)
     with open(settings.USER_SEARCH_MAP_PATH, "r") as f:
         s_2_kb_map = json.load(f)
     s_2_kb_map = {str(k): v for k, v in s_2_kb_map.items()}
@@ -27,7 +26,6 @@ def insert_search_record_2_kb(search_record_id, tmp_kb_id):
 
 
 def get_tmp_kb_id(search_record_id):
-    os.makedirs(os.path.dirname(settings.USER_SEARCH_MAP_PATH), exist_ok=True)
     with open(settings.USER_SEARCH_MAP_PATH, "r") as f:
         s_2_kb_map = json.load(f)
     # print(f_2_kb_map)
@@ -230,7 +228,6 @@ def vector_query(request):
             str(search_record.search_record_id) + ".json",
         )
         # 确保目录存在
-        os.makedirs(os.path.dirname(conversation_path), exist_ok=True)
         with open(conversation_path, "w") as f:
             json.dump({"conversation": []}, f, indent=4)
         search_record.conversation_path = conversation_path
@@ -295,7 +292,6 @@ def restore_search_record(request):
     search_record_id = request.GET.get("search_record_id")
     search_record = SearchRecord.objects.get(search_record_id=search_record_id)
     conversation_path = search_record.conversation_path
-    os.makedirs(os.path.dirname(conversation_path), exist_ok=True)
     with open(conversation_path, "r") as f:
         history = json.load(f)
 
@@ -502,7 +498,6 @@ def dialog_query(request):
         content = queryGLM("你叫epp论文助手，以你的视角重新转述这段话：" + ai_reply, [])
         history["conversation"].extend([{"role": "user", "content": message}])
         history["conversation"].extend([{"role": "assistant", "content": content}])
-    os.makedirs(os.path.dirname(conversation_path), exist_ok=True)
     with open(conversation_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(history))
     res = {"dialog_type": dialog_type, "papers": papers, "content": content}
@@ -597,7 +592,6 @@ from business.utils.paper_vdb_init import get_filtered_paper
 
 def insert_search_record_2_kb(search_record_id, tmp_kb_id):
     search_record_id = str(search_record_id)
-    os.makedirs(os.path.dirname(settings.USER_SEARCH_MAP_PATH), exist_ok=True)
     with open(settings.USER_SEARCH_MAP_PATH, "r") as f:
         s_2_kb_map = json.load(f)
     s_2_kb_map = {str(k): v for k, v in s_2_kb_map.items()}
@@ -613,7 +607,6 @@ def insert_search_record_2_kb(search_record_id, tmp_kb_id):
 
 
 def get_tmp_kb_id(search_record_id):
-    os.makedirs(os.path.dirname(settings.USER_SEARCH_MAP_PATH), exist_ok=True)
     with open(settings.USER_SEARCH_MAP_PATH, "r") as f:
         s_2_kb_map = json.load(f)
     # print(f_2_kb_map)
@@ -632,7 +625,7 @@ def queryGLM(msg: str, history=None) -> str:
     对chatGLM3-6B发出一次单纯的询问
     """
     print(msg)
-    chat_chat_url = "http://10.2.16.28:7861/chat/chat"
+    chat_chat_url = "http://10.2.16.28:2334/chat/chat"
     headers = {"Content-Type": "application/json"}
     payload = json.dumps({"query": msg, "prompt_name": "default", "temperature": 0.3})
 
@@ -841,7 +834,9 @@ def vector_query(request):
             str(search_record.search_record_id) + ".json",
         )
         # 确保目录存在
-        os.makedirs(os.path.dirname(conversation_path), exist_ok=True)
+        os.makedirs(
+            os.path.dirname(settings.USER_SEARCH_CONSERVATION_PATH), exist_ok=True
+        )
         with open(conversation_path, "w") as f:
             json.dump({"conversation": []}, f, indent=4)
         search_record.conversation_path = conversation_path
@@ -924,7 +919,6 @@ def vector_query(request):
     update_search_record_2_paper(search_record, filtered_papers)
 
     # 处理历史记录部分, 无需向前端传递历史记录, 仅需对话文件中添加
-    os.makedirs(os.path.dirname(conversation_path), exist_ok=True)
     with open(conversation_path, "r") as f:
         conversation_history = json.load(f)
 
@@ -978,7 +972,6 @@ def restore_search_record(request):
     search_record_id = request.GET.get("search_record_id")
     search_record = SearchRecord.objects.get(search_record_id=search_record_id)
     conversation_path = search_record.conversation_path
-    os.makedirs(os.path.dirname(conversation_path), exist_ok=True)
     with open(conversation_path, "r") as f:
         history = json.load(f)
 
@@ -1185,7 +1178,6 @@ def dialog_query(request):
         content = queryGLM("你叫epp论文助手，以你的视角重新转述这段话：" + ai_reply, [])
         history["conversation"].extend([{"role": "user", "content": message}])
         history["conversation"].extend([{"role": "assistant", "content": content}])
-    os.makedirs(os.path.dirname(conversation_path), exist_ok=True)
     with open(conversation_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(history))
     res = {"dialog_type": dialog_type, "papers": papers, "content": content}
@@ -1273,13 +1265,13 @@ def update_wordcnt(keywords):
     for keyword in keywords:
         if not keyword:
             continue
-        
+
         # 原子更新：先尝试增加现有记录的计数
         updated = KeywordStat.objects.filter(
-            keyword=keyword, 
+            keyword=keyword,
             period=period_start
         ).update(count=F('count') + 1)
-        
+
         if updated == 0:
             # 没有找到记录，创建新记录（处理并发创建冲突）
             try:
@@ -1324,13 +1316,12 @@ def simple_query(request):
     # 过滤停用词和短词
     not_keywords = ["paper", "research", "article"]
     # stopwords = list(nltk_stopwords.words('english'))
-    # print(stopwords) 
+    # print(stopwords)
     stopwords = []
-    filtered = [word for word in words 
-                if len(word) >= 2 
+    filtered = [word for word in words
+                if len(word) >= 2
                 and word not in stopwords
                 and word not in not_keywords]
     print(filtered)
     update_wordcnt(filtered)
     return JsonResponse({'msg': '搜索成功'}, status=200)
-

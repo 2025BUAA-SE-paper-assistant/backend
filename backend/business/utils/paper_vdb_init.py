@@ -7,6 +7,8 @@ import pickle
 
 import requests
 from django.conf import settings
+from requests.adapters import HTTPAdapter
+from urllib3 import Retry
 from business.models import Paper
 from business.utils import reply
 
@@ -25,8 +27,29 @@ def embed(texts):
 
     url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/other/embed_texts"
     payload = json.dumps({"texts": texts})
+    with open("payload_output.json", "w", encoding="utf-8") as f:
+        f.write(payload)
     headers = {"Content-Type": "application/json"}
-    response = requests.request("POST", url, headers=headers, data=payload)
+    session = requests.Session()
+
+    # 设置重试策略
+    retries = Retry(
+        total=300,  # 总重试次数
+        backoff_factor=1,  # 重试间隔时间的增长因子（1秒，2秒，4秒...）
+        status_forcelist=[500, 502, 503, 504],  # 针对哪些 HTTP 状态码进行重试
+    )
+    session.mount("http://", HTTPAdapter(max_retries=retries))
+    session.mount("https://", HTTPAdapter(max_retries=retries))
+
+    # 发送请求并设置超时时间
+    try:
+        response = session.post(
+            url, headers=headers, data=payload, timeout=(30, 120)
+        )  # 超时时间为 60 秒
+        response.raise_for_status()  # 如果响应状态码不是 2xx，会抛出异常
+    except requests.exceptions.RequestException as e:
+        print(f"Request failed: {e}")
+        return None
     return response.json()["data"]
 
 
@@ -64,7 +87,7 @@ def local_vdb_init(request):
         os.path.join(settings.LOCAL_VECTOR_DATABASE_PATH, settings.LOCAL_FAISS_NAME),
     )
     os.makedirs(
-        os.path.join(settings.LOCAL_VECTOR_DATABASE_PATH, settings.LOCAL_METADATA_NAME),
+        os.path.join(settings.LOCAL_VECTOR_DATABASE_PATH),
         exist_ok=True,
     )
     with open(
@@ -109,16 +132,11 @@ def get_filtered_paper(text, k, threshold=None):
     return ht_threshold_papers
 
 
-
 def easy_vector_query(request):
     os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
     # 1. 加载索引和元数据(是否可在初始化中加载) 2. 进行查询
     index = faiss.read_index(
         os.path.join(settings.LOCAL_VECTOR_DATABASE_PATH, settings.LOCAL_FAISS_NAME)
-    )
-    os.makedirs(
-        os.path.join(settings.LOCAL_VECTOR_DATABASE_PATH, settings.LOCAL_METADATA_NAME),
-        exist_ok=True,
     )
     with open(
         os.path.join(settings.LOCAL_VECTOR_DATABASE_PATH, settings.LOCAL_METADATA_NAME),
