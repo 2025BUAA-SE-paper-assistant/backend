@@ -16,7 +16,7 @@ from business.utils import reply
 if not os.path.exists(USER_DOCUMENTS_PATH):
     os.makedirs(USER_DOCUMENTS_PATH)
 
-
+from business.utils.activity import update_user_activity
 def upload_paper(request):
     """
     上传文献
@@ -29,6 +29,7 @@ def upload_paper(request):
         print(username)
         print(request.session)
         if user and file:
+            update_user_activity(user.user_id, type='upload')
             # 保存文件
             file_name = os.path.splitext(file.name)[0]
             file_ext = os.path.splitext(file.name)[1]

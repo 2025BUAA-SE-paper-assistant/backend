@@ -722,7 +722,7 @@ def do_string_search(search_content):
     sorted_results = [result for distance, result in results_with_distance]
     return sorted_results[:10]  # 返回前10篇相似度最高的文章
 
-# TODO 多重回调
+from business.utils.activity import update_user_activity
 @require_http_methods(["POST"])
 def vector_query(request):
     """
@@ -762,6 +762,7 @@ def vector_query(request):
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
+    update_user_activity(user.user_id, 'search')
 
     request_data = json.loads(request.body)
     search_content = request_data.get('search_content')

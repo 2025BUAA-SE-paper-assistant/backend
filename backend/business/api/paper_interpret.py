@@ -378,7 +378,7 @@ def add_conversation_history(conversation_history, query, ai_reply, conversation
     论文研读 Key! 此时AI回复为非流式输出, 可能浪费时间, alpha版本先这样
 '''
 
-
+from business.utils.activity import update_user_activity
 @require_http_methods(["POST"])
 def do_paper_study(request):
     # 鉴权
@@ -388,7 +388,7 @@ def do_paper_study(request):
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
-
+    update_user_activity(user.user_id, type='study')
     request_data = json.loads(request.body)
     query = request_data.get('query')  # 本次询问对话
     file_reading_id = request_data.get('file_reading_id')
@@ -423,7 +423,7 @@ def re_do_paper_study(request):
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
-
+    update_user_activity(user.user_id, type='study')
     request_data = json.loads(request.body)
     file_reading_id = request_data.get('file_reading_id')
     tmp_kb_id = get_tmp_kb_id(file_reading_id=file_reading_id)
