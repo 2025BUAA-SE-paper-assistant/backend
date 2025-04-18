@@ -10,9 +10,11 @@ acitivity_points = {
     'download': 5,  # 下载
     'comment': 5,  # 评论
     'annotation': 5,  # 批注
-    'chat': 3,  # 聊天
+    'study': 3,  # 研读
+    'summarize': 3,  # 摘要总结 
+    'like':1 #点赞
 }
-
+# TODO 更新摘要相关
 def update_user_activity(user_id, type='login'):
     """
     更新用户活跃度

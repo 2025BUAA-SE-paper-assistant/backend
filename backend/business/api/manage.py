@@ -463,7 +463,7 @@ def server_status(request):
     else:
         return reply.fail(msg="mode参数错误")
 
-
+from business.utils.activity import update_user_activity
 @require_http_methods('POST')
 def record_visit(request):
     """ 记录用户访问 """
@@ -484,6 +484,7 @@ def record_visit(request):
     if not UserVisit.objects.filter(ip_address=ip_address, timestamp__gte=start_of_hour,
                                     timestamp__lt=start_of_hour + datetime.timedelta(minutes=30)).first():
         UserVisit(ip_address=ip_address, timestamp=now).save()
+        update_user_activity(user.user_id, type='login')  # 更新用户活跃度
 
     return reply.success(msg="登记成功")
 

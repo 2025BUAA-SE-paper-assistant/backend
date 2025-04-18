@@ -129,7 +129,7 @@ def get_summary_status(request):
         return fail(data={'status': '正在生成中'})
     return success({'status': '生成成功'})
 
-
+from business.utils.activity import update_user_activity
 @require_http_methods(['POST'])
 def generate_summary(request):
     '''
@@ -142,6 +142,9 @@ def generate_summary(request):
         username = 'sanyuba'
     from business.models import SummaryReport, User
     user = User.objects.filter(username=username).first()
+    if user is None:
+        return fail(msg="请先正确登录")
+    update_user_activity(user.user_id, type='summarize')
     report = SummaryReport.objects.create(user_id=user, status=SummaryReport.STATUS_PENDING)
     report.title = '综述' + str(report.report_id)
     p = settings.USER_REPORTS_PATH + '/' + str(report.report_id) + '.md'
@@ -228,7 +231,7 @@ def ask_ai_single_paper(payload):
                     origin_docs.append(doc)
     return ai_reply, origin_docs
 
-
+from business.utils.activity import update_user_activity
 def create_abstract_report(request):
     request_data = json.loads(request.body)
     document_id = request_data.get("document_id")
@@ -240,6 +243,7 @@ def create_abstract_report(request):
     user = User.objects.filter(username=username).first()
     if user is None:
         return fail(msg="请先正确登录")
+    update_user_activity(user.user_id, type='summarize')
     if len(document_id) != 0:
         document = UserDocument.objects.get(document_id=document_id)
         # 获取服务器本地的path
