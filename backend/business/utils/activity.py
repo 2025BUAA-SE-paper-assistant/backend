@@ -16,7 +16,7 @@ acitivity_points = {
 def update_user_activity(user_id, type='login'):
     """
     更新用户活跃度
-    :param user_id: 用户ID
+    :param user_id: 用户id
     :param type: 活跃类型
     """
     if type not in acitivity_points:

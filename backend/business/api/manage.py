@@ -546,4 +546,30 @@ def word_trend(request):
     ]
     return reply.success(data={'hot_search':data}, msg="热搜词获取成功")
 
+from datetime import timedelta
+from business.models.statistic import UserActivityStat
+from django.utils import timezone
+# 获取所有用户的活跃时段统计，按时段统计活跃度
+@require_http_methods('GET')
+def hours_activity(request):
+    end_time = timezone.now()
+    start_time = end_time - timedelta(days=7)
+    # 构建24小时基础结构
+    hourly_data = {hour: 0 for hour in range(24)} 
+    # 查询数据库
+    activities = (
+        UserActivityStat.objects
+        .filter(timestamp__gte=start_time)
+        .annotate(hour=TruncHour('timestamp', tzinfo=timezone.utc))
+        .values('hour')
+        .annotate(total_points=Sum('activity_point'))
+        .order_by('hour')
+    )
+    # 填充查询结果
+    for entry in activities:
+        hour_utc = entry['hour'].hour
+        hourly_data[hour_utc] = entry['total_points']
+
+    ordered_result = [hourly_data[hour] for hour in range(24)]
+    return reply.success(data={'time_activity':ordered_result}, msg="时段活跃度获取成功")
 

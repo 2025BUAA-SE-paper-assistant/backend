@@ -44,6 +44,7 @@ class KeywordStat(models.Model):
     def __str__(self):
         return f"{self.keyword} ({self.period}): {self.count}"
 
+
 # 用户活跃行为统计
 class UserActivityStat(models.Model):
     user_id = models.CharField(max_length=100)  # 用户ID
@@ -56,4 +57,4 @@ class UserActivityStat(models.Model):
         ]
 
     def __str__(self):
-        return f"{self.user_id} - {self.activity_type} at {self.timestamp}"
+        return f"{self.user_id} - {self.activity_point} at {self.timestamp}"
