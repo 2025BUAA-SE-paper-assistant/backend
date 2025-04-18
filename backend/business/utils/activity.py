@@ -28,7 +28,7 @@ def update_user_activity(user_id, type='login'):
     now = datetime.now()
     # 获取用户的活跃度记录
     user_activity = UserActivityStat(user_id=user_id, 
-                                     activity_points=acitivity_points[type],
+                                     activity_point=acitivity_points[type],
                                      timestamp=now)
     # 更新活跃度
     user_activity.save()
