@@ -229,12 +229,12 @@ PAPERS_ABS_PATH = os.path.join(
     RESOURCE_PATH, "database", "papers", "abs"
 )  # 数据库论文摘要路径
 
-PAPERS_URL = os.path.join("resource", "database", "papers")  # 数据库论文本地URL
+PAPERS_URL = os.path.join(RESOURCE_PATH, "database", "papers")  # 数据库论文本地URL
 BATCH_DOWNLOAD_URL = os.path.join(
-    "resource", "database", "users", "batch_download"
+    RESOURCE_PATH, "database", "users", "batch_download"
 )  # 批量下载文件本地URL
 USER_DOCUMENTS_URL = os.path.join(
-    "resource", "uploads", "users", "documents"
+    RESOURCE_PATH, "uploads", "users", "documents"
 )  # 用户上传文件本地URL
 CACHE_PATH = os.path.join("cache")  # 缓存路径
 

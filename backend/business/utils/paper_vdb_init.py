@@ -20,6 +20,21 @@ def get_all_paper():
         paper_id = paper.paper_id
         yield keyword, paper_id
 
+def false_embed(texts):
+    if not isinstance(texts, list):
+        texts = [texts]
+    url = "http://10.2.16.28:2336/upload"
+    json_file_path = "/usr/zjq/payload_output.json"
+    # 打开文件并发送POST请求
+    with open(json_file_path, "rb") as file:
+        files = {"files": (json_file_path, file, "application/json")}
+        try:
+            response = requests.post(url, files=files)
+            response.raise_for_status()  # 如果响应状态码不是 2xx，会抛出异常
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}")
+            return None
+    return response.json()["data"]
 
 def embed(texts):
     if not isinstance(texts, list):
@@ -62,8 +77,8 @@ def local_vdb_init(request):
     for keyword, paper_id in get_all_paper():
         texts.append(keyword)
         metadata.append(paper_id)
-
-    embed_texts = embed(texts)
+    # embed_texts = embed(texts)
+    embed_texts = false_embed(texts)
 
     db_vectors = np.array(embed_texts).astype(np.float32)
 
