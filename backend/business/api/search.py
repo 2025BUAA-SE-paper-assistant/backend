@@ -651,8 +651,8 @@ def queryGLM(msg: str, history=None) -> str:
                 data = json.loads(decoded_line.replace('data: ', ''))
             else:
                 data = decoded_line
-        if data is None:
-            return "错误: 无法获取响应"
+        if data is None or not isinstance(data, dict):
+            return "错误: 无法获取响应或响应格式不正确"
         return data['text']
     except requests.exceptions.ChunkedEncodingError as e:
         print(f"ChunkedEncodingError: {e}")
