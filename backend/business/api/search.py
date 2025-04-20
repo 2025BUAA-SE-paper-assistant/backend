@@ -719,7 +719,7 @@ def do_dialogue_search(search_content, chat_chat_url, headers):
     not_keywords = ["paper", "research", "article"]
     for not_keyword in not_keywords:
         keywords = [keyword for keyword in keywords if not_keyword not in keyword]
-
+    update_wordcnt(keywords)
     keyword_filtered_papers = search_papers_by_keywords(keywords=keywords)
 
     if len(keyword_filtered_papers) > 20:
