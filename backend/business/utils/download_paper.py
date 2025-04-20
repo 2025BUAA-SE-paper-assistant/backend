@@ -1,3 +1,4 @@
+import json
 import logging
 import requests
 from business.models.paper import Paper
@@ -42,5 +43,5 @@ def downloadPaper(url, filename):
 
         return filepath
     else:
-        print('下载失败')
+        logging.error('下载失败')
         return None

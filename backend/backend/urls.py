@@ -20,6 +20,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from business.api.file import return_file
 from business.api.paper_interpret import (
     clear_conversation,
     re_do_paper_study,
@@ -181,4 +182,5 @@ urlpatterns = [
     path("api/remark/like/<int:remark_id>", like_remark),
     # 翻译
     path("api/translate", translate_text),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('<path:file_path>', return_file, name='return_file'),
+]

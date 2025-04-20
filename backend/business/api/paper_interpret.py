@@ -308,6 +308,7 @@ def get_paper_local_url(paper):
         # 访问url，下载文献到服务器
         filename = str(paper.paper_id)
         local_path = downloadPaper(original_url, filename)
+        paper.refresh_from_db()
         paper.local_path = local_path
         paper.save()
     return local_path
@@ -333,7 +334,7 @@ def get_paper_url(request):
     if paper_local_url is None:
         return reply.fail(msg="文献下载失败，请检查网络或联系管理员")
     response ={
-            "local_url": "/" + paper_local_url,
+            "local_url": paper_local_url,
             "paragraph": paper.paragraph,
             "message": "success",
         }
