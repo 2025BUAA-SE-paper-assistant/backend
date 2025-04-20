@@ -542,7 +542,7 @@ def server_status(request):
         )
     elif mode == 2:
         # 模型服务器
-        url = 'http://10.2.16.28:2336'
+        url = 'http://10.2.16.28:2336/get_server_info'
         try:
             res = requests.get(url)
             res.raise_for_status()  # 检查是否有 HTTP 错误
@@ -623,7 +623,7 @@ from django.db.models import Sum
 def word_trend(request):
     now = datetime.datetime.now()
     start_period = now - datetime.timedelta(hours=24)
-    
+
     # 聚合查询关键词总频次
     hot_keywords = (
         KeywordStat.objects
@@ -632,7 +632,7 @@ def word_trend(request):
         .annotate(total=Sum('count'))
         .order_by('-total')[:10]  # 按总频次降序取前10
     )
-    
+
     # 构造响应数据
     data = [
         {'keyword': item['keyword'], 'count': item['total']}
@@ -649,7 +649,7 @@ def hours_activity(request):
     end_time = timezone.now()
     start_time = end_time - timedelta(days=7)
     # 构建24小时基础结构
-    hourly_data = {hour: 0 for hour in range(24)} 
+    hourly_data = {hour: 0 for hour in range(24)}
     # 查询数据库
     activities = (
         UserActivityStat.objects
