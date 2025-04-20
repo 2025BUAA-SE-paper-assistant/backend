@@ -72,6 +72,7 @@ from business.api.summary import (
     create_abstract_report,
     get_summary_status,
 )
+from business.api.translate import translate_text
 
 from business.api.paper_recommend import get_recommendation
 from business.api.remark_api import (
@@ -178,4 +179,6 @@ urlpatterns = [
     path("api/remark/update/<int:remark_id>", update_remark),
     path("api/remark/delete/<int:remark_id>", delete_remark),
     path("api/remark/like/<int:remark_id>", like_remark),
+    # 翻译
+    path("api/translate", translate_text),
 ] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
