@@ -39,5 +39,5 @@ def translate_text(request):
 
     # Return the translated text as a JSON response
     return reply.success(
-        data={"target": translated_text}, message="翻译成功"
+        data={"target": translated_text}, msg="翻译成功"
     )
