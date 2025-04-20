@@ -255,6 +255,8 @@ REMOTE_MODEL_BASE_PATH = "10.2.16.28:2334"
 # 使用openai流式接口调用glm3大模型，不附带知识库
 REMOTE_CHATCHAT_GLM3_OPENAI_PATH = "10.2.16.28:2338"
 
+CHAT_CHAT_URL = "http://10.2.16.28:2334/chat/chat"
+
 # 语义检索相关
 VECTOR_DIM = 1024
 LOCAL_FAISS_NAME = "paper_index.faiss"

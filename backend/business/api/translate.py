@@ -5,12 +5,10 @@ from django.conf import settings
 import json
 import requests
 
-ai_url = os.path.join(settings.REMOTE_MODEL_BASE_PATH, "chat", "chat")
-
 @require_http_methods(["POST"])
 def translate_text(request):
     # Extract the text to be translated from the request body
-    data = request.body.decode("utf-8")
+    data = json.loads(request.body)
     text_to_translate = data.get("source", "")
     headers = {
         'Content-Type': 'application/json'
@@ -26,7 +24,7 @@ def translate_text(request):
 
     payload = json.dumps(data)
 
-    response = requests.post(ai_url, data=payload, headers=headers, stream=False)
+    response = requests.post(settings.CHAT_CHAT_URL, data=payload, headers=headers, stream=False)
     translated_text = ""
     # 捕获输出
     for line in response.iter_lines():
