@@ -24,7 +24,10 @@ def false_embed(texts):
     if not isinstance(texts, list):
         texts = [texts]
     url = "http://10.2.16.28:2336/upload"
-    json_file_path = "/usr/zjq/payload_output.json"
+    # json_file_path = "/usr/zjq/payload_output.json"
+    json_file_path = "payload_output.json"
+    with open('test.json', 'w') as wf:
+        json.dump({}, wf)
     # 打开文件并发送POST请求
     with open(json_file_path, "rb") as file:
         files = {"files": (json_file_path, file, "application/json")}
@@ -79,7 +82,6 @@ def local_vdb_init(request):
         metadata.append(paper_id)
     # embed_texts = embed(texts)
     embed_texts = false_embed(texts)
-
     db_vectors = np.array(embed_texts).astype(np.float32)
 
     # 创建索引
