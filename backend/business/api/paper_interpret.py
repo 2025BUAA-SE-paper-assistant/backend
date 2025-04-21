@@ -299,11 +299,14 @@ def get_paper_study(request):
     if file_type == 1:
         # 先查找数据库是否有对应的Filereading
         document_id = request_data.get("document_id")
-        document = UserDocument.objects.get(document_id=document_id)
-        if document is None:
-            return reply.fail(msg="没有该上传文件")
+        try:
+            document = UserDocument.objects.get(document_id=document_id)
+        except UserDocument.DoesNotExist:
+            return reply.fail(msg="没有该上传文件记录")
+        content_type = document.format
+        title = document.title
         local_path = document.local_path
-        if local_path is None:
+        if local_path is None or title is None:
             return reply.fail(msg="服务器内没有该上传文件")
         file_readings = FileReading.objects.filter(
             document_id=document_id, user_id=user.user_id
@@ -323,9 +326,12 @@ def get_paper_study(request):
 
     elif file_type == 2:
         paper_id = request_data.get("paper_id")
-        paper = Paper.objects.get(paper_id=paper_id)
-        if paper is None:
-            return reply.fail(msg="没有该论文")
+        try:
+            paper = Paper.objects.get(paper_id=paper_id)
+        except Paper.DoesNotExist:
+            return reply.fail(msg="没有该论文记录")
+        content_type = '.pdf'
+        title = paper.title
         local_path = get_paper_local_url(paper)
         if local_path is None:
             return reply.fail(msg="论文无法下载，请联系管理员/换一篇文章研读")
@@ -349,7 +355,7 @@ def get_paper_study(request):
         )
         file_reading.conversation_path = conversation_path
     
-    if os.path.exists(file_reading.conversation_path):
+    if not os.path.exists(file_reading.conversation_path):
         # 新建研读或已有对话历史文件被删除
         os.makedirs(os.path.dirname(file_reading.conversation_path), exist_ok=True)
         with open(file_reading.conversation_path, "w") as f:
