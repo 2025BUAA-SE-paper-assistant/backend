@@ -75,7 +75,7 @@ from business.api.summary import (
 )
 from business.api.translate import translate_text
 
-from business.api.paper_recommend import get_recommendation
+from business.api.paper_recommend import get_recommendation, personal_recommend
 from business.api.remark_api import (
     create_remark,
     get_remarks,
@@ -172,6 +172,7 @@ urlpatterns = [
     # 热门文献推荐
     path("api/paperRecommend", get_recommendation),
     path("api/refresh", get_recommendation),
+    path('api/personalRecommend', personal_recommend),
     # JWT认证模块
     path("api/auth/", include("business.api.jwt_auth")),
     # 标注相关模块
