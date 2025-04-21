@@ -24,8 +24,9 @@ from business.api.file import return_file
 from business.api.paper_interpret import (
     clear_conversation,
     re_do_paper_study,
-    create_paper_study,
-    restore_paper_study,
+    # create_paper_study,
+    # restore_paper_study,
+    get_paper_study,
     do_paper_study,
     get_paper_url,
 )
@@ -156,8 +157,9 @@ urlpatterns = [
     # 向量化模块
     # path("insert_vector_database", insert_vector_database),
     # 文献研读模块
-    path("api/study/createPaperStudy", create_paper_study),
-    path("api/study/restorePaperStudy", restore_paper_study),
+    # path("api/study/createPaperStudy", create_paper_study),
+    # path("api/study/restorePaperStudy", restore_paper_study),
+    path("api/study/getPaperStudy", get_paper_study),
     path("api/study/doPaperStudy", do_paper_study),
     path("api/study/getPaperPDF", get_paper_url),
     path("api/study/reDoPaperStudy", re_do_paper_study),

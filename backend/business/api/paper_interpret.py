@@ -282,6 +282,10 @@ def restore_paper_study(request):
         return reply.fail(msg="连接模型服务器失败")
 
 
+@require_http_methods(["POST"])
+def get_paper_study(request):
+    pass
+
 """
     异步测试
 """
