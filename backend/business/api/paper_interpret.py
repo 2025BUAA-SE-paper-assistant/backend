@@ -449,7 +449,10 @@ def do_paper_study(request):
     request_data = json.loads(request.body)
     query = request_data.get("query")  # 本次询问对话
     file_reading_id = request_data.get("file_reading_id")
-    fr = FileReading.objects.get(id=file_reading_id)
+    try:
+        fr = FileReading.objects.get(id=file_reading_id)
+    except FileReading.DoesNotExist:
+        return reply.fail(msg="研读会话不存在")
     tmp_kb_id = get_tmp_kb_id(file_reading_id=file_reading_id)  # 临时知识库id
     if tmp_kb_id is None:
         return reply.fail(msg="请先创建研读会话")
@@ -498,8 +501,10 @@ def re_do_paper_study(request):
     tmp_kb_id = get_tmp_kb_id(file_reading_id=file_reading_id)
     if tmp_kb_id is None:
         return reply.fail(msg="请先创建研读会话")
-
-    fr = FileReading.objects.get(id=file_reading_id)
+    try:
+        fr = FileReading.objects.get(id=file_reading_id)
+    except FileReading.DoesNotExist:
+        return reply.fail(msg="研读会话不存在")
     conversation_path = fr.conversation_path
     with open(fr.conversation_path, "r") as f:
         conversation_history = json.load(f)

@@ -713,13 +713,12 @@ def do_dialogue_search(search_content, chat_chat_url, headers):
         if decoded_line.startswith('data'):
             data = json.loads(decoded_line.replace('data: ', ''))
             keyword += data['text']
-
-    print(keyword)
+            
     keywords = keyword.split(", ")  # ["aa", "bb"]
-    not_keywords = ["paper", "research", "article"]
+    not_keywords = ["paper", "research", "article", "literature"]
     for not_keyword in not_keywords:
         keywords = [keyword for keyword in keywords if not_keyword not in keyword]
-
+    print(keywords)
     keyword_filtered_papers = search_papers_by_keywords(keywords=keywords)
 
     if len(keyword_filtered_papers) > 20:
