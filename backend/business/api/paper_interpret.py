@@ -416,6 +416,8 @@ def get_paper_local_url(paper):
         # 访问url，下载文献到服务器
         filename = str(paper.paper_id)
         local_path = downloadPaper(original_url, filename)
+        if local_path is None:
+            return None
         paper.refresh_from_db()
         paper.local_path = local_path
         paper.save()
