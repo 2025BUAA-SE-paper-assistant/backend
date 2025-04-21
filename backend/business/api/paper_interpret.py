@@ -291,7 +291,6 @@ def get_paper_study(request):
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
-    fr_created = False
     # 处理请求头
     request_data = json.loads(request.body)
     file_type = request_data.get("file_type")  # 1代表上传文献研读, 2代表已有文件研读
@@ -319,7 +318,6 @@ def get_paper_study(request):
                 title="上传论文研读",
                 conversation_path=None,
             )
-            fr_created = True
         else:
             # 已有记录
             file_reading = file_readings.first()
@@ -340,23 +338,18 @@ def get_paper_study(request):
         )
         if file_readings.count() == 0:
             # 创建
-            fr_created = True
             file_reading = FileReading(
                 user_id=user, paper_id=paper, title="数据库论文研读", conversation_path=None
             )
         else:
             file_reading = file_readings.first()
     
-
-    if fr_created:
-        # 创建对话文件路径
+    if not os.path.exists(file_reading.conversation_path):
+        # 新建研读或已有对话历史文件被删除
         conversation_path = os.path.join(
             settings.USER_READ_CONSERVATION_PATH, str(file_reading.id) + ".json"
         )
         file_reading.conversation_path = conversation_path
-    
-    if not os.path.exists(file_reading.conversation_path):
-        # 新建研读或已有对话历史文件被删除
         os.makedirs(os.path.dirname(file_reading.conversation_path), exist_ok=True)
         with open(file_reading.conversation_path, "w") as f:
             json.dump({"conversation": []}, f, indent=4)
