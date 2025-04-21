@@ -109,12 +109,12 @@ def update_remark(request, remark_id):
             return JsonResponse({"error": "备注未找到或无权限"}, status=403)
         data = json.loads(request.body)
         content = data.get("content")
-        greencheck = GreenCheck()
-        if not greencheck.check(content):
-            return content_error()
         visibility = data.get("visibility")
         if not content:
             content = remark.content
+        greencheck = GreenCheck()
+        if not greencheck.check(content):
+            return content_error()
         if visibility not in ["private", "public"]:
             return JsonResponse({"error": "可见性选项无效"}, status=400)
         if not visibility:

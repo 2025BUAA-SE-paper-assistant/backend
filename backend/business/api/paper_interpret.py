@@ -344,7 +344,7 @@ def get_paper_study(request):
         else:
             file_reading = file_readings.first()
     
-    if not os.path.exists(file_reading.conversation_path):
+    if file_reading.conversation_path is None or not os.path.exists(file_reading.conversation_path):
         # 新建研读或已有对话历史文件被删除
         conversation_path = os.path.join(
             settings.USER_READ_CONSERVATION_PATH, str(file_reading.id) + ".json"
