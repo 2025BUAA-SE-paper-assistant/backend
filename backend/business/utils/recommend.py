@@ -2,7 +2,15 @@ import requests
 import re, json
 import pandas as pd
 from business.models import User, Paper
+from business.api.search import do_dialogue_search
+from django.conf import settings
+from django.core.cache import cache
 
+def question_2_paper(question):
+    chat_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/chat"
+    headers = {"Content-Type": "application/json"}
+    papers = do_dialogue_search(question, chat_chat_url, headers)
+    return papers
 
 def get_personal_recommend(user):
     '''
