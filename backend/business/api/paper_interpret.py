@@ -462,7 +462,7 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
                 "query": query,
                 "knowledge_id": tmp_kb_id,
                 "history": conversation_history[-10:],  # 传10条历史记录
-                "prompt_name": "text",  # 使用历史记录对话模式
+                "prompt_name": "literature_research_agent",  # 使用历史记录对话模式
             }
         )
 
@@ -506,18 +506,31 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
     def _get_prob_paper_study_question():
 
         # empty模板不含任何知识库信息
+        # payload = json.dumps(
+        #     {
+        #         "query": query,
+        #         "knowledge_id": tmp_kb_id,
+        #         "history": conversation_history[-4:],
+        #         "prompt_name": "question",  # 使用问题模式
+        #         "max_tokens": 50,
+        #         "temperature": 0.4,
+        #     }
+        # )
         payload = json.dumps(
             {
-                "query": query,
+                "query": f"问题：{query}\n 回复：{ai_reply}",
                 "knowledge_id": tmp_kb_id,
                 "history": conversation_history[-4:],
-                "prompt_name": "question",  # 使用问题模式
-                "max_tokens": 50,
-                "temperature": 0.4,
+                "prompt_name": "literature_research_assistant",  # 使用问题模式
+                # "max_tokens": 50,
+                "temperature": 0.3,
             }
         )
         question_reply, _ = _get_ai_reply(payload)
-        question_reply = re.sub(r"\d. ", "", question_reply).split("\n")[:2]
+        # print(question_reply)
+        question_reply = re.findall(r'"prediction_\d+":\s*"([^"]+)"', question_reply)
+        # print(question_reply)
+        question_reply = question_reply[:2]
         question_reply.append("告诉我更多")
         return question_reply
 
