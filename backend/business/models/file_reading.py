@@ -26,4 +26,4 @@ class FileReading(models.Model):
     date = models.DateTimeField(auto_now=True)
 
     class Meta:
-        unique_together = [['user_id', 'conversation_path']]
+        unique_together = [['user_id', 'document_id','paper_id']]

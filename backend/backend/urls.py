@@ -20,11 +20,13 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from business.api.file import return_file
 from business.api.paper_interpret import (
     clear_conversation,
     re_do_paper_study,
-    create_paper_study,
-    restore_paper_study,
+    # create_paper_study,
+    # restore_paper_study,
+    get_paper_study,
     do_paper_study,
     get_paper_url,
 )
@@ -74,7 +76,7 @@ from business.api.summary import (
 )
 from business.api.translate import translate_text
 
-from business.api.paper_recommend import get_recommendation
+from business.api.paper_recommend import get_recommendation, personal_recommend
 from business.api.remark_api import (
     create_remark,
     get_remarks,
@@ -155,8 +157,9 @@ urlpatterns = [
     # 向量化模块
     # path("insert_vector_database", insert_vector_database),
     # 文献研读模块
-    path("api/study/createPaperStudy", create_paper_study),
-    path("api/study/restorePaperStudy", restore_paper_study),
+    # path("api/study/createPaperStudy", create_paper_study),
+    # path("api/study/restorePaperStudy", restore_paper_study),
+    path("api/study/getPaperStudy", get_paper_study),
     path("api/study/doPaperStudy", do_paper_study),
     path("api/study/getPaperPDF", get_paper_url),
     path("api/study/reDoPaperStudy", re_do_paper_study),
@@ -171,6 +174,7 @@ urlpatterns = [
     # 热门文献推荐
     path("api/paperRecommend", get_recommendation),
     path("api/refresh", get_recommendation),
+    path('api/personalRecommend', personal_recommend),
     # JWT认证模块
     path("api/auth/", include("business.api.jwt_auth")),
     # 标注相关模块
@@ -181,4 +185,5 @@ urlpatterns = [
     path("api/remark/like/<int:remark_id>", like_remark),
     # 翻译
     path("api/translate", translate_text),
-] + static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    path('<path:file_path>', return_file, name='return_file'),
+]

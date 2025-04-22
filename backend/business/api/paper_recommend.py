@@ -209,3 +209,12 @@ def get_recommendation(request):
     cache.set("recommended_papers", papers, timeout=86400)
 
     return reply.success(data={"papers": papers}, msg="success")
+
+from django.views.decorators.http import require_http_methods
+@require_http_methods(["POST"])
+def personal_recommend(request):
+    '''
+    从缓存中获取个性化推荐文献
+    '''
+    papers = []
+    return reply.success(data={"papers": papers}, msg="success")

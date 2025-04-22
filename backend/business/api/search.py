@@ -716,7 +716,7 @@ def do_dialogue_search(search_content, chat_chat_url, headers):
 
     print(keyword)
     keywords = keyword.split(", ")  # ["aa", "bb"]
-    not_keywords = ["paper", "research", "article"]
+    not_keywords = ["paper", "research", "article", "literature", "based", "literature"]
     for not_keyword in not_keywords:
         keywords = [keyword for keyword in keywords if not_keyword not in keyword]
 

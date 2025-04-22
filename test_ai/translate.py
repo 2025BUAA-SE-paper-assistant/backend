@@ -10,7 +10,7 @@ headers = {
 data = {
     "query": f"{q}", # 原文
     "temperature": 0.7, # temp
-    "stream": False, 
+    "stream": False,
     "model_name": "chatglm3-6b", # 模型
     "prompt_name": "translator", # prompt类型
 }

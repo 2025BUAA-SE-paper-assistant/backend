@@ -1,3 +1,4 @@
+import json
 import logging
 import requests
 from business.models.paper import Paper
@@ -35,12 +36,16 @@ def downloadPaper(url, filename):
             page = doc[page_num]
             blocks = page.get_text("blocks")
             for i, block in enumerate(blocks):
-                paragrahs.append(block)
-
-        paper.paragraph = paragrahs
+                block_list = list(block)
+                paragraph_with_page = {
+                            "page_num": page_num,
+                            "block": block_list
+                        }
+                paragrahs.append(json.dumps(paragraph_with_page))
+        paper.paragraph = json.dumps(paragrahs)
         paper.save()
 
         return filepath
     else:
-        print('下载失败')
+        logging.error('下载失败')
         return None

@@ -282,6 +282,114 @@ def restore_paper_study(request):
         return reply.fail(msg="连接模型服务器失败")
 
 
+@require_http_methods(["POST"])
+def get_paper_study(request):
+    # 鉴权
+    username = request.session.get("username")
+    if username is None:
+        username = "sanyuba"
+    user = User.objects.filter(username=username).first()
+    if user is None:
+        return reply.fail(msg="请先正确登录")
+    # 处理请求头
+    request_data = json.loads(request.body)
+    file_type = request_data.get("file_type")  # 1代表上传文献研读, 2代表已有文件研读
+    title, content_type, local_path, file_reading = None, None, None, None
+    if file_type == 1:
+        # 先查找数据库是否有对应的Filereading
+        document_id = request_data.get("document_id")
+        try:
+            document = UserDocument.objects.get(document_id=document_id)
+        except UserDocument.DoesNotExist:
+            return reply.fail(msg="没有该上传文件记录")
+        content_type = document.format
+        title = document.title
+        local_path = document.local_path
+        if local_path is None or title is None:
+            return reply.fail(msg="服务器内没有该上传文件")
+        file_readings = FileReading.objects.filter(
+            document_id=document_id, user_id=user.user_id
+        )
+        if file_readings.count() == 0:
+            # 创建
+            file_reading = FileReading(
+                user_id=user,
+                document_id=document,
+                title="上传论文研读",
+                conversation_path=None,
+            )
+        else:
+            # 已有记录
+            file_reading = file_readings.first()
+
+    elif file_type == 2:
+        paper_id = request_data.get("paper_id")
+        try:
+            paper = Paper.objects.get(paper_id=paper_id)
+        except Paper.DoesNotExist:
+            return reply.fail(msg="没有该论文记录")
+        content_type = '.pdf'
+        title = paper.title
+        local_path = get_paper_local_url(paper)
+        if local_path is None:
+            return reply.fail(msg="论文无法下载，请联系管理员/换一篇文章研读")
+        file_readings = FileReading.objects.filter(
+            paper_id=paper_id, user_id=user.user_id
+        )
+        if not file_readings:
+            # 创建
+            file_reading = FileReading(
+                user_id=user, paper_id=paper, title="数据库论文研读", conversation_path=None
+            )
+        else:
+            file_reading = file_readings.first()
+    
+    if file_reading.conversation_path is None or not os.path.exists(file_reading.conversation_path):
+        # 新建研读或已有对话历史文件被删除
+        conversation_path = os.path.join(
+            settings.USER_READ_CONSERVATION_PATH, str(file_reading.id) + ".json"
+        )
+        file_reading.conversation_path = conversation_path
+        os.makedirs(os.path.dirname(file_reading.conversation_path), exist_ok=True)
+        with open(file_reading.conversation_path, "w") as f:
+            json.dump({"conversation": []}, f, indent=4)
+
+    # 读取历史对话记录
+    with open(file_reading.conversation_path, "r") as f:
+        # 使用 json.load() 方法将 JSON 数据转换为字典
+        history = json.load(f)  
+    file_reading.save()
+
+    # 上传到远端服务器, 创建新的临时知识库
+    upload_temp_docs_url = (
+        f"http://{settings.REMOTE_MODEL_BASE_PATH}/knowledge_base/upload_temp_docs"
+    )
+    files = [
+        (
+            "files",
+            (
+                title + content_type,
+                open(local_path, "rb"),
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ),
+        )
+    ]
+
+    response = requests.request("POST", upload_temp_docs_url, files=files)
+    # 关闭文件，防止内存泄露
+    for k, v in files:
+        v[1].close()
+    
+    if response.status_code == 200:
+        tmp_kb_id = response.json()["data"]["id"]
+        insert_file_2_kb(str(file_reading.id), tmp_kb_id)
+        return reply.success(
+            {"file_reading_id": file_reading.id, "conversation_history": history},
+            msg="开启文献研读对话成功",
+        )
+    else:
+        return reply.fail(msg="连接模型服务器失败")
+
 """
     异步测试
 """
@@ -308,6 +416,9 @@ def get_paper_local_url(paper):
         # 访问url，下载文献到服务器
         filename = str(paper.paper_id)
         local_path = downloadPaper(original_url, filename)
+        if local_path is None:
+            return None
+        paper.refresh_from_db()
         paper.local_path = local_path
         paper.save()
     return local_path
@@ -333,7 +444,7 @@ def get_paper_url(request):
     if paper_local_url is None:
         return reply.fail(msg="文献下载失败，请检查网络或联系管理员")
     response ={
-            "local_url": "/" + paper_local_url,
+            "local_url": paper_local_url,
             "paragraph": paper.paragraph,
             "message": "success",
         }
@@ -350,8 +461,9 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                 "query": query,
                 "knowledge_id": tmp_kb_id,
                 "history": conversation_history[-10:],  # 传10条历史记录
-                "prompt_name": "text",  # 使用历史记录对话模式
                 "stream": True
+                "prompt_name": "literature_research_agent",  # 使用历史记录对话模式
+
             }
         )
     else:
@@ -391,10 +503,10 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
     def _get_prob_paper_study_question():
         payload = json.dumps(
             {
-                "query": query,
+                "query": f"问题：{query}\n 回复：{ai_reply}",
                 "knowledge_id": tmp_kb_id,
                 "history": conversation_history[-4:],
-                "prompt_name": "question",
+                "prompt_name": "literature_research_assistan",
                 "max_tokens": 50,
                 "temperature": 0.4,
             }
@@ -402,6 +514,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
         response = requests.post(file_chat_url, data=payload, headers=headers)
         question_reply = response.json().get("answer", "")
         question_reply = re.sub(r"\d. ", "", question_reply).split("\n")[:2]
+
         question_reply.append("告诉我更多")
         return question_reply
 
@@ -443,7 +556,10 @@ async def do_paper_study(request):
     request_data = json.loads(request.body)
     query = request_data.get("query")  # 本次询问对话
     file_reading_id = request_data.get("file_reading_id")
-    fr = FileReading.objects.get(id=file_reading_id)
+    try:
+        fr = FileReading.objects.get(id=file_reading_id)
+    except FileReading.DoesNotExist:
+        return reply.fail(msg="研读会话不存在")
     tmp_kb_id = get_tmp_kb_id(file_reading_id=file_reading_id)  # 临时知识库id
     if tmp_kb_id is None:
         return reply.fail(msg="请先创建研读会话")
@@ -515,8 +631,10 @@ def re_do_paper_study(request):
     tmp_kb_id = get_tmp_kb_id(file_reading_id=file_reading_id)
     if tmp_kb_id is None:
         return reply.fail(msg="请先创建研读会话")
-
-    fr = FileReading.objects.get(id=file_reading_id)
+    try:
+        fr = FileReading.objects.get(id=file_reading_id)
+    except FileReading.DoesNotExist:
+        return reply.fail(msg="研读会话不存在")
     conversation_path = fr.conversation_path
     with open(fr.conversation_path, "r") as f:
         conversation_history = json.load(f)

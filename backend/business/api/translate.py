@@ -16,7 +16,7 @@ def translate_text(request):
     #data部分除了query写死
     data = {
         "query": f"{text_to_translate}", # 原文
-        "temperature": 0.7, # temp
+        "temperature": 0.3, # temp
         "stream": False, 
         "model_name": "chatglm3-6b", # 模型
         "prompt_name": "translator", # prompt类型
@@ -39,5 +39,5 @@ def translate_text(request):
 
     # Return the translated text as a JSON response
     return reply.success(
-        data={"target": translated_text}, message="翻译成功"
+        data={"target": translated_text}, msg="翻译成功"
     )
