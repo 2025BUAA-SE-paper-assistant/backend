@@ -211,10 +211,16 @@ def get_recommendation(request):
     return reply.success(data={"papers": papers}, msg="success")
 
 from django.views.decorators.http import require_http_methods
+from business.utils.recommend import get_personal_questions
+from business.models import User
 @require_http_methods(["POST"])
 def personal_recommend(request):
     '''
     从缓存中获取个性化推荐文献
     '''
-    papers = []
-    return reply.success(data={"papers": papers}, msg="success")
+    username = request.session.get("username")
+    user = User.objects.filter(username=username).first()
+    if user is None:
+        return reply.fail(msg="请先正确登录")
+    
+    return reply.success(data={"question": get_personal_questions(user)}, msg="success")
