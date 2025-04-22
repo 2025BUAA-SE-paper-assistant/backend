@@ -1,10 +1,35 @@
 import requests
 import re, json
 import pandas as pd
-from business.models import User, Paper
+from business.models import User, Paper, FileReading
 from business.api.search import do_dialogue_search
 from django.conf import settings
 from django.core.cache import cache
+import random
+
+def get_personal_papers(user):
+    '''根据5:3:2的比例从user.collected_paper,user.liked_paper,FileReading(user_id=user.id)
+    里随机抽取20篇论文，如果相关论文不足则从数据库中随机抽取
+    '''
+    collected_papers = user.collected_papers.all()
+    liked_papers = user.liked_papers.all()
+    filereadings = FileReading.objects.filter(user_id=user.user_id, paper_id__isnull=False)
+    readed_papers_id = filereadings.values_list('paper_id', flat=True)
+    readed_papers = Paper.objects.filter(paper_id__in=readed_papers_id)
+
+    collected_size = min(10, len(collected_papers))
+    liked_size = min(6, len(liked_papers))
+    filereading_size = min(4, len(filereadings))
+    papers = list(collected_papers)[:collected_size] + list(liked_papers)[:liked_size] + list(readed_papers)[:filereading_size]
+    if len(papers) == 0:
+        # 随机抽20篇
+        all_papers = list(Paper.objects.all())
+        papers = random.sample(all_papers, min(20, len(all_papers)))
+    
+    return papers
+
+    
+    
 
 def question_2_paper(question):
     chat_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/chat"
