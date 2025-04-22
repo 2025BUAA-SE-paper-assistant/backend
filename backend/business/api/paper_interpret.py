@@ -336,7 +336,7 @@ def get_paper_study(request):
         file_readings = FileReading.objects.filter(
             paper_id=paper_id, user_id=user.user_id
         )
-        if file_readings.count() == 0:
+        if not file_readings:
             # 创建
             file_reading = FileReading(
                 user_id=user, paper_id=paper, title="数据库论文研读", conversation_path=None
