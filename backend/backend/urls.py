@@ -85,6 +85,7 @@ from business.api.remark_api import (
     delete_remark,
     like_remark,
 )
+from business.utils.classification import init_classification
 
 urlpatterns = [
     path("admin/", admin.site.urls),
@@ -168,6 +169,8 @@ urlpatterns = [
     path("api/study/generateAbstractReport", create_abstract_report),
     # 本地向量库初始化
     path("api/init/localVDBInit", local_vdb_init),
+    # 论文分类初始化
+    path("api/init/classification", init_classification),
     # 综述摘要生成
     path("api/summary/generateSummaryReport", generate_summary),
     path("api/summary/generateAbstractReport", create_abstract_report),

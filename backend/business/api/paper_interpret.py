@@ -462,6 +462,10 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
                 "query": query,
                 "knowledge_id": tmp_kb_id,
                 "history": conversation_history[-10:],  # 传10条历史记录
+#                 "stream": True,
+#                 "prompt_name": "literature_research_agent",  # 使用历史记录对话模式
+
+
                 "prompt_name": "text_new",  # 使用历史记录对话模式
                 "max_tokens": 2048,
                 "top_k": 10,
@@ -599,6 +603,33 @@ def do_paper_study(request):
     ai_reply, origin_docs, question_reply = do_file_chat(
         conversation_history, query, tmp_kb_id
     )
+
+#     # 收集完整回复用于保存历史记录
+#     full_reply = ""
+#     origin_docs = []
+
+#     async def generate_response():
+#         nonlocal full_reply, origin_docs
+#         async for chunk in stream_generator:
+#             if chunk["type"] == "answer":
+#                 full_reply += chunk["content"]
+#                 yield f"data: {json.dumps({'answer': chunk['content']})}\n\n"
+#             elif chunk["type"] == "doc":
+#                 origin_docs.append(chunk["content"])
+#                 yield f"data: {json.dumps({'doc': chunk['content']})}\n\n"
+#             elif chunk["type"] == "complete":
+#                 # 流式传输完成后保存历史记录
+#                 add_conversation_history(
+#                     conversation_history, query, full_reply, fr.conversation_path
+#                 )
+#                 yield f'''data: {json.dumps({
+#                     'complete': True,
+#                     'prob_question': question_reply
+#                 })}\n\n'''
+
+#     response = StreamingHttpResponse(
+#         generate_response(),
+#         content_type="text/event-stream"
     add_conversation_history(
         conversation_history, query, ai_reply, fr.conversation_path
     )
