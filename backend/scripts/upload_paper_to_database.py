@@ -1,21 +1,22 @@
 import os
-import django
 import random
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'backend.settings')
 
-django.setup()
-
 from business.models.paper import Paper
 import json
 from datetime import datetime
+from django.http import JsonResponse
 
 def refresh():
     Paper.objects.all().delete()
 
-if __name__ == '__main__':
+def refresh_paper(request):
+    """
+    从 JSON 文件中读取论文数据并存储到数据库中
+    """
     refresh()
-    with open('paper.json', 'r', encoding='utf-8') as f:
+    with open('/usr/zjq/backend/backend/scripts/paper.json', 'r', encoding='utf-8') as f:
         papers = json.load(f)
         for paper in papers:
             # 将字符串日期转换为 datetime 对象
@@ -34,3 +35,4 @@ if __name__ == '__main__':
                 comment_count=0,
                 download_count=random.randint(0, 1000)
             )
+    return JsonResponse({"status": "success", "message": "论文数据已成功上传到数据库"})

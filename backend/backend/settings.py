@@ -77,6 +77,7 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:10516",
     "https://epp.buaase.cn",
     "http://114.116.195.166",
+    "http://101.126.149.17",
 ]
 
 CORS_ALLOW_METHODS = (
@@ -136,8 +137,8 @@ DATABASES = {
         "ENGINE": "django.db.backends.mysql",
         "NAME": "phds",
         "USER": "zjq",
-        "PASSWORD": "123456",
-        "HOST": "114.116.195.166",
+        "PASSWORD": "88888888",
+        "HOST": "101.126.149.17",
         "PORT": "3306",
         "OPTIONS": {
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
@@ -146,6 +147,7 @@ DATABASES = {
         },
     }
 }
+
 
 # Password validation
 # https://docs.djangoproject.com/en/4.2/ref/settings/#auth-password-validators

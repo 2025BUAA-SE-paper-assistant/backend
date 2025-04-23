@@ -20,6 +20,7 @@ from django.urls import path, include
 from django.conf import settings
 from django.conf.urls.static import static
 
+from scripts.upload_paper_to_database import refresh_paper
 from business.api.file import return_file
 from business.api.paper_interpret import (
     clear_conversation,
@@ -188,5 +189,7 @@ urlpatterns = [
     path("api/remark/like/<int:remark_id>", like_remark),
     # 翻译
     path("api/translate", translate_text),
+    # path('api/refreshpaper/',refresh_paper),  # 刷新论文数据
     path('<path:file_path>', return_file, name='return_file'),
+
 ]

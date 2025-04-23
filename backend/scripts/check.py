@@ -22,6 +22,7 @@ from alibabacloud_tea_util.client import Client as UtilClient
 from alibabacloud_tea_util import models as util_models
 import json
 import uuid
+from loguru import logger
 
 class GreenCheck:
 
@@ -62,18 +63,17 @@ class GreenCheck:
                 # 调用成功。
                 # 获取审核结果。
                 result = response.body
-                print('response success. result:{}'.format(result))
+                logger.info('response success. result:{}'.format(result))
                 if result.code == 200:
                     resultData = result.data
-                    print('labels:{}, reason:{}'.format(resultData.labels, resultData.reason))
+                    logger.info('labels:{}, reason:{}'.format(resultData.labels, resultData.reason))
                 if result.code == 200 and not result.data.labels:
                     return True
             else:
-                print('response not success. status:{} ,result:{}'.format(response.status_code, response))
+                logger.warning('response not success. status:{} ,result:{}'.format(response.status_code, response))
                 return False
-            return False
         except Exception as err:
-            print(err)
+            logger.error(err)
             return False
 
 if __name__ == '__main__':
