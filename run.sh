@@ -7,6 +7,11 @@ pip install -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
 
+# 启动定时任务
+python manage.py crontab remove  # 移除旧任务
+python manage.py crontab add     # 添加新任务
+python manage.py crontab show    # 验证任务列表
+
 # 停止现有的 runserver 进程（无需 sudo）
 pkill -f "python manage.py runserver" || true
 

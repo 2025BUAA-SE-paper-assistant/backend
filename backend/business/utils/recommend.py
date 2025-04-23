@@ -31,7 +31,7 @@ def get_personal_papers(user):
     
     
 
-def question_2_paper(question):
+def question_2_papers(question):
     chat_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/chat"
     headers = {"Content-Type": "application/json"}
     papers = do_dialogue_search(question, chat_chat_url, headers)
@@ -90,31 +90,16 @@ def get_personal_questions(user):
 def get_personal_key(user):
     return f'recommendation_{user.user_id}'
 
-def set_personal_recommend_cache(user):
+def refresh_personal_recommend_cache(user):
     '''将基于用户的推荐问题以及推荐文献写入缓存,缓存一天'''
     questions = get_personal_questions(user)
     cached_data = [
         {
             "question": question,
-            "paper_ids": [paper.id for paper in get_personal_papers(user)],
+            "paper_ids": [paper.paper_id for paper in question_2_papers(question)],
         }
         for question in questions
     ]
     cache_key = get_personal_key(user)
     cache.set(cache_key, cached_data, timeout=24 * 60 * 60)  # 缓存一天
-
-import logging
-def set_all_personal_recommend_cache():
-    users = User.objects.all()
-    max_retries = 3  # 最大重试次数
-    for user in users:
-        for attempt in range(max_retries):
-            try:
-                set_personal_recommend_cache(user)
-                logging.info(f"Successfully set cache for user {user.user_id}")
-                break  # 如果成功，跳出重试循环
-            except Exception as e:
-                logging.error(f"Error setting cache for user {user.user_id}: {e}")
-                if attempt == max_retries - 1:
-                    logging.error(f"Failed to set cache for user {user.user_id} after {max_retries} attempts.")
 
