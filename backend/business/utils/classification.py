@@ -30,7 +30,7 @@ def embed_for_subclass(texts):
     return response.json()['data']
 
 def embed_from_file(file_path):
-    url = f'http://10.2.16.28/upload'
+    url = "http://10.2.16.28:2336/upload"
     with open(file_path, 'rb') as file:
         files = {"files": (file_path, file, "application/json")}
         try:
@@ -95,7 +95,7 @@ def classify():
     papers = Paper.objects.all()
     title_embeddings = embed_from_file(title_json_path)
     print("Title embedding over!")
-    abstract_embeddings = embed_for_subclass(abstract_json_path)
+    abstract_embeddings = embed_from_file(abstract_json_path)
     print("Abstract embedding over!")
 
     for i, paper in tqdm(enumerate(papers)):
