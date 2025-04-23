@@ -450,11 +450,34 @@ def get_paper_url(request):
         }
     return reply.success(response, msg="success")
 
+def _get_ai_reply(payload):
+    file_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/file_chat"
+    headers = {"Content-Type": "application/json"}
+    response = requests.request(
+        "POST", file_chat_url, data=payload, headers=headers, stream=True
+    )
+    ai_reply = ""
+    origin_docs = []
+    for line in response.iter_lines():
+        if line:
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+            if decoded_line.startswith('data'):
+                data = decoded_line.replace('data: ', '')
+                data = json.loads(data)
+                if "answer" in data:
+                    ai_reply += data["answer"]
+                    yield json.dumps({"data": data["answer"]},ensure_ascii=False)+"\n"
+                if "docs" in data:
+                    for doc in data["docs"]:
+                        doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                        origin_docs.append(doc)
+                    yield json.dumps({"docs": origin_docs}, ensure_ascii=False) + "\n"
 
 def do_file_chat(conversation_history, query, tmp_kb_id):
     # 将历史记录与本次对话发送给服务器, 获取对话结果
-    file_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/file_chat"
-    headers = {"Content-Type": "application/json"}
+
     if len(conversation_history) != 0:
         # 有问题
         payload = json.dumps(
@@ -462,88 +485,44 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
                 "query": query,
                 "knowledge_id": tmp_kb_id,
                 "history": conversation_history[-10:],  # 传10条历史记录
-#                 "stream": True,
-#                 "prompt_name": "literature_research_agent",  # 使用历史记录对话模式
-
-
+                "stream": True,
                 "prompt_name": "text_new",  # 使用历史记录对话模式
                 "max_tokens": 2048,
                 "top_k": 10,
             }
         )
-
     else:
         payload = json.dumps(
             {
                 "query": query,
                 "knowledge_id": tmp_kb_id,
                 "prompt_name": "default",  # 使用普通对话模式
+                "stream": True,
                 "max_tokens": 2048,
                 "top_k": 10,
             }
         )
-        # print(payload)
+    return _get_ai_reply(payload)
 
-    def _get_ai_reply(payload):
-        response = requests.request(
-            "POST", file_chat_url, data=payload, headers=headers, stream=False
-        )
-        ai_reply = ""
-        origin_docs = []
-        # print(response)
-        for line in response.iter_lines():
-            if line:
-                decoded_line = line.decode('utf-8')
-                if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
-                    continue
-                if decoded_line.startswith('data'):
-                    data = decoded_line.replace('data: ', '')
-                    data = json.loads(data)
-                    if "answer" in data:
-                        ai_reply += data["answer"]
-                    if "docs" in data:
-                        for doc in data["docs"]:
-                            doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
-                            origin_docs.append(doc)
-        return ai_reply, origin_docs
+def get_next_question(ai_reply,conversation_history, query, tmp_kb_id):
+    payload = json.dumps(
+        {
+            "query": f"问题：{query}\n 回复：{ai_reply}",
+            "knowledge_id": tmp_kb_id,
+            "history": conversation_history[-4:],
+            "prompt_name": "literature_research_assistant",  # 使用问题模式
+            # "max_tokens": 50,
+            "temperature": 0.4,
+        }
+    )
+    question_reply, _ = _get_ai_reply(payload)
+    question_reply = re.findall(r'"prediction_\d+":\s*"([^"]+)"', question_reply)
+    print(question_reply)
+    question_reply = question_reply[:2]
+    question_reply.append("针对上一个问题做更详细的回复")
+    return json.dumps({"question":question_reply},ensure_ascii=False)+'\n'
 
-    # task = asyncio.create_task(_get_ai_reply())  # 创建任务
-    ai_reply, origin_docs = _get_ai_reply(payload)
 
-    # 给出用户仍可能存在的问题
-    def _get_prob_paper_study_question():
-
-        # empty模板不含任何知识库信息
-        # payload = json.dumps(
-        #     {
-        #         "query": query,
-        #         "knowledge_id": tmp_kb_id,
-        #         "history": conversation_history[-4:],
-        #         "prompt_name": "question",  # 使用问题模式
-        #         "max_tokens": 50,
-        #         "temperature": 0.4,
-        #     }
-        # )
-        payload = json.dumps(
-            {
-                "query": f"问题：{query}\n 回复：{ai_reply}",
-                "knowledge_id": tmp_kb_id,
-                "history": conversation_history[-4:],
-                "prompt_name": "literature_research_assistant",  # 使用问题模式
-                # "max_tokens": 50,
-                "temperature": 0.4,
-            }
-        )
-        question_reply, _ = _get_ai_reply(payload)
-        print(question_reply)
-        question_reply = re.findall(r'"prediction_\d+":\s*"([^"]+)"', question_reply)
-        print(question_reply)
-        question_reply = question_reply[:2]
-        question_reply.append("针对上一个问题做更详细的回复")
-        return question_reply
-
-    question_reply = _get_prob_paper_study_question()
-    return ai_reply, origin_docs, question_reply
 
 
 def add_conversation_history(conversation_history, query, ai_reply, conversation_path):
@@ -561,13 +540,8 @@ def add_conversation_history(conversation_history, query, ai_reply, conversation
     with open(conversation_path, "w") as f:
         json.dump({"conversation": conversation_history}, f, indent=4)
 
-
-"""
-    论文研读 Key! 此时AI回复为非流式输出, 可能浪费时间, alpha版本先这样
-"""
-
-from business.utils.activity import update_user_activity
 from django.http import StreamingHttpResponse
+from business.utils.activity import update_user_activity
 @require_http_methods(["POST"])
 def do_paper_study(request):
     # 鉴权
@@ -597,46 +571,28 @@ def do_paper_study(request):
     with open(fr.conversation_path, "r") as f:
         conversation_history = json.load(f)
 
-    print(tmp_kb_id)
     conversation_history = list(conversation_history.get("conversation"))  # List[Dict]
-    # print(conversation_history, query, tmp_kb_id)
-    ai_reply, origin_docs, question_reply = do_file_chat(
-        conversation_history, query, tmp_kb_id
-    )
 
-#     # 收集完整回复用于保存历史记录
-#     full_reply = ""
-#     origin_docs = []
+    def stream_generator():
+        ai_reply = ""
+        for chunk in do_file_chat(conversation_history, query, tmp_kb_id):
+            print(chunk)
+            if type(chunk) is list:
+                for c in chunk:
+                    ai_reply += c
+                    yield c
+            else:
+                ai_reply += chunk
+                yield chunk
+        # 这里可以添加处理 origin_docs 和 question_reply 的逻辑，但由于流式返回，可能需要调整处理方式
+        for chunk in get_next_question(ai_reply, conversation_history, query, tmp_kb_id):
+            print(chunk)
+            yield chunk
+        add_conversation_history(
+            conversation_history, query, ai_reply, fr.conversation_path
+        )
 
-#     async def generate_response():
-#         nonlocal full_reply, origin_docs
-#         async for chunk in stream_generator:
-#             if chunk["type"] == "answer":
-#                 full_reply += chunk["content"]
-#                 yield f"data: {json.dumps({'answer': chunk['content']})}\n\n"
-#             elif chunk["type"] == "doc":
-#                 origin_docs.append(chunk["content"])
-#                 yield f"data: {json.dumps({'doc': chunk['content']})}\n\n"
-#             elif chunk["type"] == "complete":
-#                 # 流式传输完成后保存历史记录
-#                 add_conversation_history(
-#                     conversation_history, query, full_reply, fr.conversation_path
-#                 )
-#                 yield f'''data: {json.dumps({
-#                     'complete': True,
-#                     'prob_question': question_reply
-#                 })}\n\n'''
-
-#     response = StreamingHttpResponse(
-#         generate_response(),
-#         content_type="text/event-stream"
-    add_conversation_history(
-        conversation_history, query, ai_reply, fr.conversation_path
-    )
-    return reply.success(
-        {"ai_reply": ai_reply, "docs": origin_docs, "prob_question": question_reply},
-        msg="成功",
-    )
+    return StreamingHttpResponse(stream_generator(), content_type='text/plain')
 
 
 """
