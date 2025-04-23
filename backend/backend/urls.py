@@ -186,7 +186,7 @@ urlpatterns = [
     path("api/remark/like/<int:remark_id>", like_remark),
     # 翻译
     path("api/translate", translate_text),
-    path('api/refreshpaper/',refresh_paper),  # 刷新论文数据
+    # path('api/refreshpaper/',refresh_paper),  # 刷新论文数据
     path('<path:file_path>', return_file, name='return_file'),
 
 ]
