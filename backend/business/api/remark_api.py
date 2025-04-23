@@ -2,6 +2,7 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
+from wrap.content import validate_content
 from business.utils.reply import content_error
 from scripts.check import GreenCheck
 from business.models.remark import Remark
@@ -10,16 +11,15 @@ from django.db.models import Q
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
+
 @login_required
 @require_http_methods(["POST"])
+@validate_content(fields=["content"])
 def create_remark(request):
     user = request.user
     data = json.loads(request.body)
     paper_id = data.get("paper_id")
     content = data.get("content")
-    greencheck = GreenCheck()
-    if not greencheck.check(content):
-        return content_error()
     visibility = data.get("visibility", "private")
     paragraph_id = data.get("paragraph_id")
     paper = Paper.objects.filter(paper_id=paper_id).first()
@@ -102,6 +102,7 @@ def get_remarks(request, paper_id):
 
 @login_required
 @require_http_methods(["POST"])
+@validate_content(fields=["content"])
 def update_remark(request, remark_id):
     try:
         remark = Remark.objects.get(id=remark_id, user=request.user)
@@ -112,9 +113,6 @@ def update_remark(request, remark_id):
         visibility = data.get("visibility")
         if not content:
             content = remark.content
-        greencheck = GreenCheck()
-        if not greencheck.check(content):
-            return content_error()
         if visibility not in ["private", "public"]:
             return JsonResponse({"error": "可见性选项无效"}, status=400)
         if not visibility:
