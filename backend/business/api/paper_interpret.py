@@ -343,7 +343,7 @@ def get_paper_study(request):
             )
         else:
             file_reading = file_readings.first()
-    
+
     if file_reading.conversation_path is None or not os.path.exists(file_reading.conversation_path):
         # 新建研读或已有对话历史文件被删除
         conversation_path = os.path.join(
@@ -357,7 +357,7 @@ def get_paper_study(request):
     # 读取历史对话记录
     with open(file_reading.conversation_path, "r") as f:
         # 使用 json.load() 方法将 JSON 数据转换为字典
-        history = json.load(f)  
+        history = json.load(f)
     file_reading.save()
 
     # 上传到远端服务器, 创建新的临时知识库
@@ -379,7 +379,7 @@ def get_paper_study(request):
     # 关闭文件，防止内存泄露
     for k, v in files:
         v[1].close()
-    
+
     if response.status_code == 200:
         tmp_kb_id = response.json()["data"]["id"]
         insert_file_2_kb(str(file_reading.id), tmp_kb_id)
@@ -563,6 +563,7 @@ def add_conversation_history(conversation_history, query, ai_reply, conversation
 """
 
 from business.utils.activity import update_user_activity
+from django.http import StreamingHttpResponse
 @require_http_methods(["POST"])
 def do_paper_study(request):
     # 鉴权
