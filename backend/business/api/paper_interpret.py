@@ -461,7 +461,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                 "query": query,
                 "knowledge_id": tmp_kb_id,
                 "history": conversation_history[-10:],  # 传10条历史记录
-                "stream": True
+                "stream": True,
                 "prompt_name": "literature_research_agent",  # 使用历史记录对话模式
 
             }
@@ -597,10 +597,10 @@ async def do_paper_study(request):
                 add_conversation_history(
                     conversation_history, query, full_reply, fr.conversation_path
                 )
-                yield f"data: {json.dumps({
+                yield f'''data: {json.dumps({
                     'complete': True,
                     'prob_question': question_reply
-                })}\n\n"
+                })}\n\n'''
 
     response = StreamingHttpResponse(
         generate_response(),
