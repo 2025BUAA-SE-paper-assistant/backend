@@ -14,5 +14,10 @@ def fail(data: dict = None, msg: str = ''):
     data['message'] = msg
     return JsonResponse(data=data, status=400)
 
-def content_error():
-    return JsonResponse(data={"data":"内容不符合规范，请重试","code": 422}, status=422)
+def content_error(description: str = ''):
+    """
+    内容不符合规范
+    :param description: 描述
+    :return:
+    """
+    return JsonResponse(data={"data": description if description else "内容不符合规范，请重试", "code": 422}, status=422)

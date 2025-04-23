@@ -9,6 +9,7 @@ import time
 import zipfile
 import os
 from django.http import JsonResponse
+from wrap.content import validate_content
 from business.utils.reply import content_error
 from scripts.check import GreenCheck
 from business.models import (
@@ -177,6 +178,7 @@ def report_comment(request):
         return JsonResponse({"error": "请求方法错误", "is_success": False}, status=400)
 
 from business.utils.activity import update_user_activity
+@validate_content(fields=["comment"])
 def comment_paper(request):
     """
     用户评论（含一级、二级评论）
@@ -187,9 +189,6 @@ def comment_paper(request):
         paper_id = data.get("paper_id")
         comment_level = data.get("comment_level")  # 1 / 2
         text = data.get("comment")
-        green_check = GreenCheck()
-        if not green_check.check(text):
-            return content_error()
         user = User.objects.filter(username=username).first()
         paper = Paper.objects.filter(paper_id=paper_id).first()
         if user and paper:

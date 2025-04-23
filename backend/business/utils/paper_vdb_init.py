@@ -9,6 +9,7 @@ import requests
 from django.conf import settings
 from requests.adapters import HTTPAdapter
 from urllib3 import Retry
+from wrap.content import validate_content
 from business.models import Paper
 from business.utils import reply
 
@@ -148,7 +149,7 @@ def get_filtered_paper(text, k, threshold=None):
         ht_threshold_papers.append(p)
     return ht_threshold_papers
 
-
+@validate_content(fields=["texts"])
 def easy_vector_query(request):
     os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
     # 1. 加载索引和元数据(是否可在初始化中加载) 2. 进行查询

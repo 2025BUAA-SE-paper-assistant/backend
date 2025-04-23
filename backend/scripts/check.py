@@ -64,19 +64,23 @@ class GreenCheck:
                 # 获取审核结果。
                 result = response.body
                 logger.info('response success. result:{}'.format(result))
-                if result.code == 200:
-                    resultData = result.data
-                    logger.info('labels:{}, reason:{}'.format(resultData.labels, resultData.reason))
+                description = result.data.descriptions
                 if result.code == 200 and not result.data.labels:
-                    return True
+                    # labels为空，表示没有检测到敏感内容。
+                    return True, description
+                else:
+                    resultData = result.data
+                    logger.info('resultData:{}'.format(resultData))
+                    return False, description
             else:
-                logger.warning('response not success. status:{} ,result:{}'.format(response.status_code, response))
-                return False
+                logger.warning('response not success. status:{} ,result:{}'.format(response.status_code, response.body.data.descriptions))
+                return False, "network error"
         except Exception as err:
             logger.error(err)
-            return False
+            return False, f"{err}"
 
 if __name__ == '__main__':
     green_check = GreenCheck()
-    content = "这是一段测试文本"
-    green_check.check(content)
+    content = "毛泽东"
+    print(green_check.check(content))
+

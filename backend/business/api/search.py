@@ -8,6 +8,8 @@ import re
 
 import Levenshtein
 
+from wrap.content import validate_content
+
 
 # def insert_search_record_2_kb(search_record_id, tmp_kb_id):
 #     search_record_id = str(search_record_id)
@@ -773,6 +775,7 @@ def do_string_search(search_content):
 
 from business.utils.activity import update_user_activity
 @require_http_methods(["POST"])
+@validate_content(["search_content"])
 def vector_query(request):
     """
     本函数用于处理向量化检索的请求，search_record含不存在则创建，存在（需传参数）则恢复两种情况
