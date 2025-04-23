@@ -74,7 +74,7 @@ class GreenCheck:
                     logger.info('resultData:{}'.format(resultData))
                     return False, description
             else:
-                # logger.warning('response not success. status:{} ,result:{}'.format(response.status_code, response.body.data.descriptions))
+                logger.warning('response not success. status:{} ,result:{}'.format(response.status_code, response.body))
                 return False, "network error"
         except Exception as err:
             logger.error(err)
