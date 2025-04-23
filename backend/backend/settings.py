@@ -333,6 +333,8 @@ CHANNEL_LAYERS = {
 }
 
 
-# CRONJOBS = [
-#     ('0 0 * * *', 'business.api.paper_recommand.refreshRecommendation'),
-# ]
+CRONJOBS = [
+    # ('0 0 * * *', 'business.api.paper_recommand.refreshRecommendation'),
+    # 每天3点刷
+    ('0 3 * * *', 'business.cron.refresh_all_personal_recommend_cache'),
+]
