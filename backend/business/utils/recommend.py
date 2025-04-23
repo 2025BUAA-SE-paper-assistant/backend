@@ -43,7 +43,7 @@ def get_personal_questions(user):
     '''
     papers = get_personal_papers(user)
     content = ""
-    for index, paper in papers.iterrows():
+    for i, paper in enumerate(papers, 1):
         # print("Title:", row['title'])
         # print("Abstract:", row['abstract'])
         # print("-" * 50)  # 分隔线
@@ -83,6 +83,38 @@ def get_personal_questions(user):
     questions = re.findall(pattern, ans) #生成问题list
     recommend_questions = []
     for i, question in enumerate(questions, 1):
-        recommend_questions.append(question)
+        recommend_questions.append(question+'?')
     return(recommend_questions)
+
+
+def get_personal_key(user):
+    return f'recommendation_{user.user_id}'
+
+def set_personal_recommend_cache(user):
+    '''将基于用户的推荐问题以及推荐文献写入缓存,缓存一天'''
+    questions = get_personal_questions(user)
+    cached_data = [
+        {
+            "question": question,
+            "paper_ids": [paper.id for paper in get_personal_papers(user)],
+        }
+        for question in questions
+    ]
+    cache_key = get_personal_key(user)
+    cache.set(cache_key, cached_data, timeout=24 * 60 * 60)  # 缓存一天
+
+import logging
+def set_all_personal_recommend_cache():
+    users = User.objects.all()
+    max_retries = 3  # 最大重试次数
+    for user in users:
+        for attempt in range(max_retries):
+            try:
+                set_personal_recommend_cache(user)
+                logging.info(f"Successfully set cache for user {user.user_id}")
+                break  # 如果成功，跳出重试循环
+            except Exception as e:
+                logging.error(f"Error setting cache for user {user.user_id}: {e}")
+                if attempt == max_retries - 1:
+                    logging.error(f"Failed to set cache for user {user.user_id} after {max_retries} attempts.")
 

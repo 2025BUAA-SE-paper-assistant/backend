@@ -211,9 +211,10 @@ def get_recommendation(request):
     return reply.success(data={"papers": papers}, msg="success")
 
 from django.views.decorators.http import require_http_methods
-from business.utils.recommend import get_personal_questions
+from business.utils.recommend import get_personal_key
 from business.models import User
-@require_http_methods(["POST"])
+from django.core.cache import cache
+@require_http_methods(["GET"])
 def personal_recommend(request):
     '''
     从缓存中获取个性化推荐文献
@@ -222,5 +223,14 @@ def personal_recommend(request):
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
-    
-    return reply.success(data={"question": get_personal_questions(user)}, msg="success")
+    cached_data = cache.get(get_personal_key(user))
+    if cached_data is None:
+        return reply.fail(msg="暂无推荐")
+    data = [
+        {
+            "question": item["question"],
+            "paper_infos": list(Paper.objects.filter(paper_id__in=item["paper_ids"]).values()),
+        }
+        for item in cached_data
+    ]
+    return reply.success(data={"personal_recommend": data}, msg="成功返回个性化推荐")
