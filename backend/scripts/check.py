@@ -64,16 +64,17 @@ class GreenCheck:
                 # 获取审核结果。
                 result = response.body
                 logger.info('response success. result:{}'.format(result))
-                description = result.data.descriptions
+
                 if result.code == 200 and not result.data.labels:
                     # labels为空，表示没有检测到敏感内容。
-                    return True, description
+                    return True, "success"
                 else:
+                    description = result.data.descriptions
                     resultData = result.data
                     logger.info('resultData:{}'.format(resultData))
                     return False, description
             else:
-                logger.warning('response not success. status:{} ,result:{}'.format(response.status_code, response.body.data.descriptions))
+                # logger.warning('response not success. status:{} ,result:{}'.format(response.status_code, response.body.data.descriptions))
                 return False, "network error"
         except Exception as err:
             logger.error(err)
