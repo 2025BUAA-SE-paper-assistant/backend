@@ -3,22 +3,17 @@
 '''
 import json
 import os
-import django
 import requests
 import torch
+from django.conf import settings
 
 # 注入子类
-
-# 设置 Django 配置模块
-
-# from utils.paper_vdb_init import embed
-from django.conf import settings
-os.environ.setdefault("DJANGO_SETTINGS_MODULE", "backend.backend.settings")
-# 初始化 Django
-django.setup()
 # 导入模型
 from business.models.paper import *
 from tqdm import tqdm
+
+title_json_path = os.path.join(settings.MEDIA_ROOT, "title.json")
+abstract_json_path = os.path.join(settings.MEDIA_ROOT, "abstract.json")
 
 def embed_for_subclass(texts):
     if not isinstance(texts, list):
@@ -34,6 +29,18 @@ def embed_for_subclass(texts):
     response = requests.request("POST", url, headers=headers, data=payload)
     return response.json()['data']
 
+def embed_from_file(file_path):
+    url = f'http://10.2.16.28/upload'
+    with open(file_path, 'rb') as file:
+        files = {"files": (file_path, file, "application/json")}
+        try:
+            response = requests.post(url, files=files)
+            response.raise_for_status()  # 如果响应状态码不是 2xx，会抛出异常
+        except requests.exceptions.RequestException as e:
+            print(f"Request failed: {e}")
+            return None
+    return response.json()['data']
+
 def create_labels():
     # 创建新的 Label 实例
     names = ["边缘检测", "目标检测", "图像分类", "图像去噪", "图像分割", "人脸识别", "姿态估计", "动作识别", "人群计数", "医学影像", "三维重建", "对抗样本攻击"]
@@ -41,6 +48,26 @@ def create_labels():
         label = Subclass.objects.create(name=name)
         label.save()
 
+
+def dump_titles_and_abstracts():
+    papers = Paper.objects.all()
+    # 统一嵌入
+    titles = []
+    abstracts = []
+    for paper in tqdm(papers):
+        # 获取 Paper 的 Title 和 Abstract
+        title = paper.title
+        abstract = paper.abstract
+        titles.append(title)
+        abstracts.append(abstract)
+    payload_title = json.dumps({"texts": titles})
+    payload_abstract = json.dumps({"texts": abstracts})
+    headers = {"Content-Type": "application/json"}
+    with open(title_json_path, 'w', encoding='utf-8') as f:
+        f.write(payload_title)
+    with open(abstract_json_path, 'w', encoding='utf-8') as f:
+        f.write(payload_abstract)
+    print('dump titles and abstracts over!')
 
 def delete_all_subclasses():
     # papers = Paper.objects.all()
@@ -54,6 +81,7 @@ def delete_all_subclasses():
         2. 根据人工观察，Title或Abstract任一相似度大于0.4即可认为满足子类划分
         3. 若一篇论文依2方法无法获得任一子类，将相似度最大的子类作为子类划分
 '''
+
 def classify():
     # 获取所有 Subclass 实体
     subclasses = Subclass.objects.all()
@@ -63,20 +91,11 @@ def classify():
     # print(subclass_embeddings)
     # assert 1 == 0
     # 获取所有 Paper 实体
-    papers = Paper.objects.all()
-    # 统一嵌入
-    titles = []
-    abstracts = []
-    for paper in tqdm(papers):
-        # 获取 Paper 的 Title 和 Abstract
-        title = paper.title
-        abstract = paper.abstract
-        titles.append(title)
-        abstracts.append(abstract)
 
-    title_embeddings = embed_for_subclass(titles)
+    papers = Paper.objects.all()
+    title_embeddings = embed_from_file(title_json_path)
     print("Title embedding over!")
-    abstract_embeddings = embed_for_subclass(abstracts)
+    abstract_embeddings = embed_for_subclass(abstract_json_path)
     print("Abstract embedding over!")
 
     for i, paper in tqdm(enumerate(papers)):
@@ -101,6 +120,19 @@ def classify():
 
         # 保存 Paper 实体
         paper.save()
+
+
+
+from django.views.decorators.http import require_http_methods
+from business.utils import reply
+@require_http_methods(["POST"])
+def init_classification(request):
+    delete_all_subclasses()
+    create_labels()
+    dump_titles_and_abstracts()
+    classify()
+    return reply.success({"success": "成功"})
+
 
 if __name__ == '__main__':
     # delete_all_subclasses()
