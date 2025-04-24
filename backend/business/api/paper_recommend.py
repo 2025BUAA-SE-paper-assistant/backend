@@ -69,7 +69,10 @@ def queryGLM(msg: str, history=None) -> str:
                 data = decoded_line
         if data is None:
             return "错误: 无法获取响应"
-        return data["text"]
+        # Only try to access "text" if data is a dictionary
+        if isinstance(data, dict):
+            return data.get("text", "错误: 响应中没有 'text' 字段")
+        return data  # Return the string if data is not a dictionarys
     except requests.exceptions.ChunkedEncodingError as e:
         print(f"ChunkedEncodingError: {e}")
         return "错误: 响应提前结束"
@@ -138,7 +141,7 @@ def query_arxiv_by_date_and_field(
     return papers
 
 
-def refreshCache(self):
+def refreshCache():
     # 在这里写你想要执行的任务
     # 获取当前日期，以及前一周的日期
     today = datetime.now()
