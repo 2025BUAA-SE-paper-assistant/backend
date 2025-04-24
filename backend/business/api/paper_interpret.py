@@ -343,7 +343,7 @@ def get_paper_study(request):
             )
         else:
             file_reading = file_readings.first()
-
+    file_reading.save() # 内存实体保存到数据库中，获取id
     if file_reading.conversation_path is None or not os.path.exists(file_reading.conversation_path):
         # 新建研读或已有对话历史文件被删除
         conversation_path = os.path.join(
