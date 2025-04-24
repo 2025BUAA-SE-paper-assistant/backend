@@ -690,7 +690,7 @@ def update_search_record_2_paper(search_record, filtered_papers):
         search_record.related_papers.add(paper)
 
 
-def do_dialogue_search(search_content, chat_chat_url, headers):
+def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=False):
     # filtered_paper = search_paper_with_query(search_content, limit=200) 从这里改为使用服务器的查询接口
     vector_filtered_papers = get_filtered_paper(
         search_content, k=100, threshold=0.3
@@ -716,13 +716,13 @@ def do_dialogue_search(search_content, chat_chat_url, headers):
             data = json.loads(decoded_line.replace('data: ', ''))
             keyword += data['text']
 
-    print(keyword)
+    # print(keyword)
     keywords = keyword.split(", ")  # ["aa", "bb"]
     not_keywords = ["paper", "research", "article", "literature", "based", "literature"]
     for not_keyword in not_keywords:
         keywords = [keyword for keyword in keywords if not_keyword not in keyword]
-
-    keyword_filtered_papers = search_papers_by_keywords(keywords=keywords)
+    if not setting_cache:
+        keyword_filtered_papers = search_papers_by_keywords(keywords=keywords)
 
     if len(keyword_filtered_papers) > 20:
         keyword_filtered_papers = keyword_filtered_papers[:20]

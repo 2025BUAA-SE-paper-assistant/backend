@@ -132,7 +132,7 @@ def get_filtered_paper(text, k, threshold=None):
         metadata = pickle.load(f)
 
     embed_texts = embed(text)
-    print(embed_texts)
+    # print(embed_texts)
     distances, indices = index.search(np.array(embed_texts).astype(np.float32), k)
     i2d_dict = {}
     for d, i in zip(distances[0], indices[0]):
