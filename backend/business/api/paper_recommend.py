@@ -211,7 +211,7 @@ def get_recommendation(request):
     return reply.success(data={"papers": papers}, msg="success")
 
 from django.views.decorators.http import require_http_methods
-from business.utils.recommend import get_personal_key
+from business.utils.recommend import get_personal_key, refresh_personal_recommend_cache
 from business.models import User
 from django.core.cache import cache
 @require_http_methods(["GET"])
