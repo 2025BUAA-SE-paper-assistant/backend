@@ -16,9 +16,12 @@ def validate_content(fields):
             greencheck = GreenCheck()
             for field in fields:
                 content = data.get(field)
-                result_status, description = greencheck.check(content)
-                if content and not result_status:
-                    return content_error(description)
+                if content:
+                    for i in range(0, len(content), 400):
+                        chunk = content[i:i+400]
+                        result_status, description = greencheck.check(chunk)
+                        if not result_status:
+                            return content_error(description)
             return func(request, *args, **kwargs)
         return wrapper
     return decorator

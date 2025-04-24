@@ -20,4 +20,4 @@ def content_error(description: str = ''):
     :param description: 描述
     :return:
     """
-    return JsonResponse(data={"data": description if description else "内容不符合规范，请重试", "code": 422}, status=422)
+    return JsonResponse(data={"message": description if description else "内容不符合规范，请重试", "is_success": False}, status=200)

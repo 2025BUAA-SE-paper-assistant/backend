@@ -5,7 +5,7 @@ api/peper_interpret/...
 """
 
 import asyncio
-import json
+import json, ast
 import os
 import re
 from urllib.parse import quote
@@ -454,9 +454,13 @@ def get_paper_url(request):
 def do_file_chat(conversation_history, query, tmp_kb_id):
     # 将历史记录与本次对话发送给服务器, 获取对话结果
     file_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/file_chat"
+    knowledge_base_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/knowledge_base_chat"
+    search_engine_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/search_engine_chat"
     headers = {"Content-Type": "application/json"}
+    has_history = False
     if len(conversation_history) != 0:
         # 有问题
+        has_history = True
         payload = json.dumps(
             {
                 "query": query,
@@ -484,6 +488,300 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
         )
         # print(payload)
 
+    def _get_ai_reply_multi(payload, has_history):
+        need_2 = False
+        need_3 = False
+        # 先判断需不需要分发任务
+        data_0 = {
+            "query": query,
+            "temperature": 0.3,
+            "stream": False,
+            "model_name": "chatglm3-6b",
+            "prompt_name": "ai_expert_grok3",
+        }
+        payload_0 = json.dumps(data_0)
+        response = requests.request(
+            "POST", settings.CHAT_CHAT_URL, data=payload_0, headers=headers, stream=False
+        )
+        ans = ""
+        for line in response.iter_lines():
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+        
+            if decoded_line.startswith('data'):
+                data = json.loads(decoded_line.replace('data: ', ''))
+                ans += data['text']
+        ans_json = ans.replace('\n', '')
+        json_data = json.loads(ans_json)
+        # need_1 = json_data.get("原生大模型")
+        need_2 = json_data.get("搜索引擎专家大模型")
+        need_3 = json_data.get("科研大模型")
+        print("搜索：", need_2)
+        print("科研：", need_3)
+        # 再分发任务
+        if need_2 == False and need_3 == False :
+            response = requests.request(
+                "POST", file_chat_url, data=payload, headers=headers, stream=False
+            )
+            ai_reply = ""
+            origin_docs = []
+            # print(response)
+            for line in response.iter_lines():
+                if line:
+                    decoded_line = line.decode('utf-8')
+                    if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                        continue
+                    if decoded_line.startswith('data'):
+                        data = decoded_line.replace('data: ', '')
+                        data = json.loads(data)
+                        if "answer" in data:
+                            ai_reply += data["answer"]
+                        if "docs" in data:
+                            for doc in data["docs"]:
+                                doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                                origin_docs.append(doc)
+        else :
+            data = {
+                "query": query,
+                "temperature": 0.3,
+                "stream": False,
+                "model_name": "chatglm3-6b",
+                "knowledge_id": tmp_kb_id,
+                "prompt_name": "ai_expert_chain",
+            }
+            payload_1 = json.dumps(data)
+            response = requests.request(
+                "POST", file_chat_url, data=payload_1, headers=headers, stream=False
+            )
+            ans = ""
+            for line in response.iter_lines():
+                if line:
+                    decoded_line = line.decode('utf-8')
+                    if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                        continue
+                    if decoded_line.startswith('data'):
+                        data = decoded_line.replace('data: ', '')
+                        data = json.loads(data)
+                        if "answer" in data:
+                            ans += data["answer"]
+            print("分发成功：",ans)
+            datas = None
+            try:
+                datas = json.loads(ans)
+                prompts = {}
+
+                # 遍历并检查类型
+                for model, details in data.items():
+                    if isinstance(details, dict):
+                        prompts[model] = details.get("prompt", "")
+                    else:
+                        print(f"配置项 '{model}' 数据类型异常: {type(details)}")
+
+                # 打印结果
+                for model, prompt in prompts.items():
+                    print(f"模型: {model}")
+                    print(f"Prompt:\n{prompt}\n{'-'*30}")
+
+            except json.JSONDecodeError as e:
+                print(f"JSON解析失败: {e}")
+            query_1 = ""
+            query_2 = ""
+            query_3 = ""
+            for model_name, model_info in datas.items():
+                if model_name == "原生大模型":
+                    query_1 = model_info['prompt']
+                if model_name == "搜索引擎专家大模型" :
+                    query_2 = model_info['prompt']
+                if model_name == "科研大模型" :
+                    query_3 = model_info['prompt']
+
+            # 调用原生大模型
+            if(has_history) :
+                data_1 = {
+                # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
+                    "query": f"{query_1}",
+                    "knowledge_id": tmp_kb_id,
+                    "temperature": 0.3,
+                    "stream": False,
+                    "model_name": "chatglm3-6b",
+                    "history": conversation_history[-10:],  # 传10条历史记录
+                    "prompt_name": "text_new",  # 使用历史记录对话模式
+                    "max_tokens": 2048,
+                    "top_k": 10,
+                }
+            else:
+              data_1 = {
+                # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
+                    "query": f"{query_1}",
+                    "knowledge_id": tmp_kb_id,
+                    "temperature": 0.3,
+                    "stream": False,
+                    "model_name": "chatglm3-6b",
+                    # "history": conversation_history[-10:],  # 传10条历史记录
+                    "prompt_name": "text_new",  # 使用历史记录对话模式
+                    "max_tokens": 2048,
+                    "top_k": 10,
+                }
+
+            try:
+                payload_2 = json.dumps(data_1)
+            except TypeError as e:
+                print(f"JSON序列化失败: {e}")
+
+            response = requests.request(
+                "POST", file_chat_url, data=payload_2, headers=headers, stream=False
+            )
+            ai_reply_1 = ""
+            origin_docs_1 = []
+            # print(response)
+            for line in response.iter_lines():
+                if line:
+                    decoded_line = line.decode('utf-8')
+                    if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                        continue
+                    if decoded_line.startswith('data'):
+                        data = decoded_line.replace('data: ', '')
+                        data = json.loads(data)
+                        if "answer" in data:
+                            ai_reply_1 += data["answer"]
+                        if "docs" in data:
+                            for doc in data["docs"]:
+                                doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                                origin_docs_1.append(doc)
+
+            # print("原生：",ai_reply_1)
+
+            #再调用搜索引擎
+            ai_reply_2 = ""
+            origin_docs_2 = []
+            if need_2:
+                data_2 = {
+                    "query": query_2, # 原文
+                    "temperature": 0.7, # temp
+                    "top_k": 10,
+                    "stream": False, 
+                    "max_tokens": 2048,
+                    "search_engine_name": "bing",
+                    "model_name": "chatglm3-6b", # 模型
+                    "prompt_name": "search", # prompt类型，这个有没有都可以
+                }
+
+                payload_3 = json.dumps(data_2)
+                response = requests.request(
+                    "POST", search_engine_chat_url, data=payload_3, headers=headers, stream=False
+                )
+
+
+                for line in response.iter_lines():
+                    if line:
+                        decoded_line = line.decode('utf-8')
+                        if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                            continue
+                        if decoded_line.startswith('data'):
+                            data = decoded_line.replace('data: ', '')
+                            data = json.loads(data)
+                            if "answer" in data:
+                                ai_reply_2 += data["answer"]
+                                # print(data["answer"])
+                            if "docs" in data:
+                                for doc in data["docs"]:
+                                    doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                                    origin_docs_2.append(doc)
+
+            # print("搜索：", ai_reply_2)
+
+            ai_reply_3 = ""
+            origin_docs_3 = []
+            
+            if need_3:
+                data_3 = {
+                    # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
+                    "query": f"{query_3}",
+                    "knowledge_base_name": "Paper_all_in_one",
+                    "temperature": 0.7,
+                    "stream": False,
+                    "model_name": "chatglm3-6b",
+                    "prompt_name": "literature_research_agent",
+                    "max_tokens": 4096,
+                    "top_k": 10,
+                }
+
+                payload_4 = json.dumps(data_3)
+                response = requests.request(
+                    "POST", knowledge_base_chat_url, data=payload_4, headers=headers, stream=False
+                )
+
+                # print(response)
+                for line in response.iter_lines():
+                    if line:
+                        decoded_line = line.decode('utf-8')
+                        if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                            continue
+                        if decoded_line.startswith('data'):
+                            data = decoded_line.replace('data: ', '')
+                            data = json.loads(data)
+                            if "answer" in data:
+                                ai_reply_3 += data["answer"]
+                            if "docs" in data:
+                                for doc in data["docs"]:
+                                    doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                                    origin_docs_3.append(doc)
+            # print("科研：", ai_reply_3)
+
+            if(has_history) :
+                data_4 = {
+                    # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
+                    "query": f"原生模型输出：{ai_reply_1}\n搜索引擎输出:{ai_reply_2}\n科研模型输出:{ai_reply_3}\n",
+                    "knowledge_id": tmp_kb_id,
+                    "temperature": 0.3,
+                    "stream": False,
+                    "model_name": "chatglm3-6b",
+                    "prompt_name": "agent_integration",
+                    "history": conversation_history[-10:],
+                    "max_tokens": 4096,
+                    "top_k": 10,
+                }
+            else :
+                data_4 = {
+                    # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
+                    "query": f"原生模型输出：{ai_reply_1}\n搜索引擎输出:{ai_reply_2}\n科研模型输出:{ai_reply_3}\n",
+                    "knowledge_id": tmp_kb_id,
+                    "temperature": 0.3,
+                    "stream": False,
+                    "model_name": "chatglm3-6b",
+                    "prompt_name": "agent_integration",
+                    # "history": conversation_history[-10:],
+                    "max_tokens": 4096,
+                    "top_k": 10,
+                }
+
+            payload_5 = json.dumps(data_4)
+
+            response = requests.request(
+                "POST", file_chat_url, data=payload_5, headers=headers, stream=False
+            )
+
+            ai_reply = ""
+            origin_docs = []
+            # print(response)
+            for line in response.iter_lines():
+                if line:
+                    decoded_line = line.decode('utf-8')
+                    if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                        continue
+                    if decoded_line.startswith('data'):
+                        data = decoded_line.replace('data: ', '')
+                        data = json.loads(data)
+                        if "answer" in data:
+                            ai_reply += data["answer"]
+                        if "docs" in data:
+                            for doc in data["docs"]:
+                                doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                                origin_docs.append(doc)
+        print("最终输出：",ai_reply)                        
+        return ai_reply, origin_docs
+    
     def _get_ai_reply(payload):
         response = requests.request(
             "POST", file_chat_url, data=payload, headers=headers, stream=False
@@ -505,11 +803,12 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
                         for doc in data["docs"]:
                             doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
                             origin_docs.append(doc)
+        # print("最终输出：",ai_reply)
         return ai_reply, origin_docs
 
     # task = asyncio.create_task(_get_ai_reply())  # 创建任务
-    ai_reply, origin_docs = _get_ai_reply(payload)
-
+    # ai_reply, origin_docs = _get_ai_reply(payload)
+    ai_reply, origin_docs = _get_ai_reply_multi(payload, has_history)
     # 给出用户仍可能存在的问题
     def _get_prob_paper_study_question():
 

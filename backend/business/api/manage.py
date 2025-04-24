@@ -46,7 +46,7 @@ def get_last_5_years():
     """获取近五年"""
     current_date = datetime.datetime.now()
     years = []
-
+    # current_date = current_date.replace(year=2023)
     for i in range(5):
         current_date = current_date.replace(month=1, day=1)
         years.append(current_date)

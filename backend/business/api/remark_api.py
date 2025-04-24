@@ -39,7 +39,7 @@ def create_remark(request):
             paragraph_id=paragraph_id,
         )
         return JsonResponse(
-            {"message": "备注创建成功", "remark_id": remark.id},
+            {"message": "备注创建成功","is_success": True},
             status=201,
         )
     except Paper.DoesNotExist:
@@ -120,7 +120,7 @@ def update_remark(request, remark_id):
         remark.content = content
         remark.visibility = visibility
         remark.save()
-        return JsonResponse({"message": "备注更新成功"}, status=200)
+        return JsonResponse({"message": "备注更新成功", "is_success": True}, status=200)
     except Remark.DoesNotExist:
         return JsonResponse({"error": "备注未找到或无权限"}, status=403)
 
