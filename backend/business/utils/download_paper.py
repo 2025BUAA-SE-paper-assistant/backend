@@ -15,20 +15,17 @@ def downloadPaper(url, filename):
     """
     下载文献到服务器
     """
+    os.environ['http_proxy'] = 'http://127.0.0.1:7890'
+    os.environ['https_proxy'] = 'http://127.0.0.1:7890'
     path = os.path.join(PAPERS_PATH, filename) if filename.endswith('.pdf') else os.path.join(PAPERS_PATH, filename + '.pdf')
     if os.path.exists(path):
         return path
-    response = requests.get(url)
-    if response.status_code == 200:
+    command = f"wget {url} -O {path} "
+    result = os.system(command)
+    if result == 0:
         logging.info(f"下载成功: {url}")
-        if not filename.endswith('.pdf'):
-            filepath = os.path.join(PAPERS_PATH, filename + '.pdf')
-        else:
-            filepath = os.path.join(PAPERS_PATH, filename)
-        with open(filepath, 'wb') as f:
-            f.write(response.content)
         doc = fitz.open(
-            filepath
+            path
         )
         paper = Paper.objects.get(paper_id = filename)
         paragrahs = []
@@ -45,7 +42,7 @@ def downloadPaper(url, filename):
         paper.paragraph = json.dumps(paragrahs)
         paper.save()
 
-        return filepath
+        return path
     else:
         logging.error('下载失败')
         return None
