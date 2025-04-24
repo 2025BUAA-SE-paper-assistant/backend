@@ -69,7 +69,10 @@ def queryGLM(msg: str, history=None) -> str:
                 data = decoded_line
         if data is None:
             return "错误: 无法获取响应"
-        return data["text"]
+        # Only try to access "text" if data is a dictionary
+        if isinstance(data, dict):
+            return data.get("text", "错误: 响应中没有 'text' 字段")
+        return data  # Return the string if data is not a dictionarys
     except requests.exceptions.ChunkedEncodingError as e:
         print(f"ChunkedEncodingError: {e}")
         return "错误: 响应提前结束"
@@ -112,10 +115,11 @@ def get_authors(entry):
 
 
 def query_arxiv_by_date_and_field(
-    start_date, end_date, field="computer vision", max_results=200
+    start_date, end_date, field="cs.CV", max_results=200
 ) -> list[arxiv_paper]:
-    query = f"submittedDate:[{start_date} TO {end_date}] AND all:{field}"
+    query = f"submittedDate:[{start_date} TO {end_date}] AND cat:{field}" # 按照分类查询
     url = f"http://arxiv.org/api/query?search_query={query}&id_list=&start=0&max_results={max_results}"
+    print("Query URL:", url)  # Debug: Print the URL
     response = requests.get(url)
     papers = []
     if response.status_code == 200:
@@ -138,19 +142,25 @@ def query_arxiv_by_date_and_field(
     return papers
 
 
-def refreshCache(self):
+def refreshCache():
     # 在这里写你想要执行的任务
     # 获取当前日期，以及前一周的日期
+    # today = datetime.now()
+    # last_week = today - timedelta(days=7)
+    # today_str = today.strftime("%Y-%m-%d")
+    # last_week_str = last_week.strftime("%Y-%m-%d")
+    # # 获取前一周的所有论文
+    # papers = []
+    # for i in range(7):
+    #     start_date = (last_week + timedelta(days=i)).strftime("%Y-%m-%d")
+    #     end_date = (last_week + timedelta(days=i + 1)).strftime("%Y-%m-%d")
+    #     papers += query_arxiv_by_date_and_field(start_date, end_date)
     today = datetime.now()
-    last_week = today - timedelta(days=7)
-    today_str = today.strftime("%Y-%m-%d")
-    last_week_str = last_week.strftime("%Y-%m-%d")
-    # 获取前一周的所有论文
-    papers = []
-    for i in range(7):
-        start_date = (last_week + timedelta(days=i)).strftime("%Y-%m-%d")
-        end_date = (last_week + timedelta(days=i + 1)).strftime("%Y-%m-%d")
-        papers += query_arxiv_by_date_and_field(start_date, end_date)
+    last_month = today - timedelta(days=30)  # Changed from days=7 to days=30
+    # 获取过去三十天的所有论文
+    start_date = (last_month).strftime("%Y-%m-%d")
+    end_date = (today).strftime("%Y-%m-%d")
+    papers = query_arxiv_by_date_and_field(start_date, end_date)
     # 从中提取关键词
     keywords = []
     for paper in papers:
@@ -214,6 +224,8 @@ from django.views.decorators.http import require_http_methods
 from business.utils.recommend import get_personal_key, refresh_personal_recommend_cache
 from business.models import User
 from django.core.cache import cache
+import logging
+logger = logging.getLogger('business')
 @require_http_methods(["GET"])
 def personal_recommend(request):
     '''
@@ -224,24 +236,41 @@ def personal_recommend(request):
     if user is None:
         return reply.fail(msg="请先正确登录")
     cached_data = cache.get(get_personal_key(user))
+    data = []
     if cached_data is None:
-        return reply.fail(msg="暂无推荐")
-    data = [
-        {
-            "question": item["question"],
-            "paper_infos": list(Paper.objects.filter(paper_id__in=item["paper_ids"]).values()),
+        logger.info(f"用户 {user.user_id} 的个性化推荐缓存未命中，正在刷新...")
+        # 挂一个线程去刷新缓存
+        import threading
+        t = threading.Thread(target=refresh_personal_recommend_cache, args=(user,))
+        t.start()
+        # 返回默认的五个问题
+        topic_names = ['目标检测', '图像去噪', '动作识别', '对抗样本攻击', '三维重建']
+        questions = {
+            topic_name:
+            topic_name + '的最新进展有哪些?' for topic_name in topic_names
         }
-        for item in cached_data
-    ]
+        # 从问题对应类别中随机选择20篇论文
+        data = [
+            {
+                "question": questions[topic],
+                "paper_infos": list(Paper.objects.filter(sub_classes__name=topic).values()),
+            } for topic in topic_names
+        ]
+    else:
+        data = [
+            {
+                "question": item["question"],
+                "paper_infos": list(Paper.objects.filter(paper_id__in=item["paper_ids"]).values()),
+            }
+            for item in cached_data
+        ]
     return reply.success(data={"personal_recommend": data}, msg="成功返回个性化推荐")
 
-import logging
 
 @require_http_methods(["POST"])
 def refresh_personal_recommend(request):
     users = User.objects.all()
     max_retries = 3
-    logger = logging.getLogger('business')
     for user in users:
         for attempt in range(max_retries):
             try:
