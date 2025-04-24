@@ -211,7 +211,7 @@ def get_recommendation(request):
     return reply.success(data={"papers": papers}, msg="success")
 
 from django.views.decorators.http import require_http_methods
-from business.utils.recommend import get_personal_key
+from business.utils.recommend import get_personal_key, refresh_personal_recommend_cache
 from business.models import User
 from django.core.cache import cache
 @require_http_methods(["GET"])
@@ -234,3 +234,20 @@ def personal_recommend(request):
         for item in cached_data
     ]
     return reply.success(data={"personal_recommend": data}, msg="成功返回个性化推荐")
+
+import logging
+@require_http_methods(["POST"])
+def refresh_personal_recommend(request):
+    users = User.objects.all()
+    max_retries = 3
+    for user in users:
+        for attempt in range(max_retries):
+            try:
+                refresh_personal_recommend_cache(user)
+                logging.info(f"Successfully set cache for user {user.user_id}")
+                break  # 如果成功，跳出重试循环
+            except Exception as e:
+                logging.error(f"Error setting cache for user {user.user_id}: {e}")
+                if attempt == max_retries - 1:
+                    logging.error(f"Failed to set cache for user {user.user_id} after {max_retries} attempts.")
+    return reply.success(msg="成功刷新个性化推荐缓存")

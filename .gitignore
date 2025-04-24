@@ -173,3 +173,4 @@ backend/resource
 backend/myenv/
 
 
+*.sql

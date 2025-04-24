@@ -238,7 +238,7 @@ BATCH_DOWNLOAD_URL = os.path.join(
 USER_DOCUMENTS_URL = os.path.join(
     RESOURCE_PATH, "uploads", "users", "documents"
 )  # 用户上传文件本地URL
-CACHE_PATH = os.path.join("cache")  # 缓存路径
+CACHE_PATH = os.path.join(RESOURCE_PATH, "cache")  # 缓存路径
 
 WIN_WKHTMLTOPDF_PATH = os.path.join(
     RESOURCE_PATH, "wkhtmltopdf", "bin", "wkhtmltopdf.exe"
@@ -248,7 +248,7 @@ LINUX_WKHTMLTOPDF_PATH = "/usr/bin/wkhtmltopdf"  # 安装位置
 LOCAL_VECTOR_DATABASE_PATH = os.path.join(RESOURCE_PATH, "vector_database_for_search")
 
 
-CACHE_PATH = "/cache/"  # 缓存路径
+# CACHE_PATH = "/cache/"  # 缓存路径
 
 MAX_Similarity = 0.8  # 最大相似度，介于-1和1之间，不确定
 
