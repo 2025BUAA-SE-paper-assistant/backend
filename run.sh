@@ -1,8 +1,9 @@
 # 检查 tmux 会话是否存在，如果不存在则创建
 tmux has-session -t my_terminal 2>/dev/null || tmux new-session -d -s my_terminal
 
+source .venv/bin/activate
+
 cd backend
-source myenv/bin/activate
 pip install -r requirements.txt
 python manage.py makemigrations
 python manage.py migrate
