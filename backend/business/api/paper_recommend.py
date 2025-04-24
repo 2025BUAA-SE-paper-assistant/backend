@@ -217,6 +217,8 @@ from django.views.decorators.http import require_http_methods
 from business.utils.recommend import get_personal_key, refresh_personal_recommend_cache
 from business.models import User
 from django.core.cache import cache
+import logging
+logger = logging.getLogger('business')
 @require_http_methods(["GET"])
 def personal_recommend(request):
     '''
@@ -227,24 +229,41 @@ def personal_recommend(request):
     if user is None:
         return reply.fail(msg="请先正确登录")
     cached_data = cache.get(get_personal_key(user))
+    data = []
     if cached_data is None:
-        return reply.fail(msg="暂无推荐")
-    data = [
-        {
-            "question": item["question"],
-            "paper_infos": list(Paper.objects.filter(paper_id__in=item["paper_ids"]).values()),
+        logger.info(f"用户 {user.user_id} 的个性化推荐缓存未命中，正在刷新...")
+        # 挂一个线程去刷新缓存
+        import threading
+        t = threading.Thread(target=refresh_personal_recommend_cache, args=(user,))
+        t.start()
+        # 返回默认的五个问题
+        topic_names = ['目标检测', '图像去噪', '动作识别', '对抗样本攻击', '三维重建']
+        questions = {
+            topic_name:
+            topic_name + '的最新进展有哪些?' for topic_name in topic_names
         }
-        for item in cached_data
-    ]
+        # 从问题对应类别中随机选择20篇论文
+        data = [
+            {
+                "question": questions[topic],
+                "paper_infos": list(Paper.objects.filter(sub_classes__name=topic).values()),
+            } for topic in topic_names
+        ]
+    else:
+        data = [
+            {
+                "question": item["question"],
+                "paper_infos": list(Paper.objects.filter(paper_id__in=item["paper_ids"]).values()),
+            }
+            for item in cached_data
+        ]
     return reply.success(data={"personal_recommend": data}, msg="成功返回个性化推荐")
 
-import logging
 
 @require_http_methods(["POST"])
 def refresh_personal_recommend(request):
     users = User.objects.all()
     max_retries = 3
-    logger = logging.getLogger('business')
     for user in users:
         for attempt in range(max_retries):
             try:
