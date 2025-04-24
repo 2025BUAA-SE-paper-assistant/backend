@@ -34,7 +34,7 @@ def get_personal_papers(user):
 def question_2_papers(question):
     chat_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/chat"
     headers = {"Content-Type": "application/json"}
-    papers = do_dialogue_search(question, chat_chat_url, headers)
+    papers = do_dialogue_search(question, chat_chat_url, headers, setting_cache=True)
     return papers
 
 def get_personal_questions(user):
