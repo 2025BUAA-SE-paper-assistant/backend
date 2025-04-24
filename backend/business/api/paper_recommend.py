@@ -236,18 +236,20 @@ def personal_recommend(request):
     return reply.success(data={"personal_recommend": data}, msg="成功返回个性化推荐")
 
 import logging
+
 @require_http_methods(["POST"])
 def refresh_personal_recommend(request):
     users = User.objects.all()
     max_retries = 3
+    logger = logging.getLogger('business')
     for user in users:
         for attempt in range(max_retries):
             try:
                 refresh_personal_recommend_cache(user)
-                logging.info(f"Successfully set cache for user {user.user_id}")
+                logger.info(f"Successfully set cache for user {user.user_id}")
                 break  # 如果成功，跳出重试循环
             except Exception as e:
-                logging.error(f"Error setting cache for user {user.user_id}: {e}")
+                logger.error(f"Error setting cache for user {user.user_id}: {e}")
                 if attempt == max_retries - 1:
-                    logging.error(f"Failed to set cache for user {user.user_id} after {max_retries} attempts.")
+                    logger.error(f"Failed to set cache for user {user.user_id} after {max_retries} attempts.")
     return reply.success(msg="成功刷新个性化推荐缓存")
