@@ -239,7 +239,7 @@ def personal_recommend(request):
     data = []
     if cached_data is None:
         logger.info(f"用户 {user.user_id} 的个性化推荐缓存未命中，正在刷新...")
-        # 挂一个线程去刷新缓存
+        # 挂一个线程去刷新缓存，但是数据库会同步操作等待
         import threading
         t = threading.Thread(target=refresh_personal_recommend_cache, args=(user,))
         t.start()
@@ -253,7 +253,7 @@ def personal_recommend(request):
         data = [
             {
                 "question": questions[topic],
-                "paper_infos": list(Paper.objects.filter(sub_classes__name=topic).values()),
+                "paper_infos": list(Paper.objects.filter(sub_classes__name=topic).values()[:20]),
             } for topic in topic_names
         ]
     else:

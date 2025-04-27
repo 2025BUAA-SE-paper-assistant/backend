@@ -721,9 +721,9 @@ def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=Fal
     not_keywords = ["paper", "research", "article", "literature", "based", "literature"]
     for not_keyword in not_keywords:
         keywords = [keyword for keyword in keywords if not_keyword not in keyword]
-    if not setting_cache:
-        keyword_filtered_papers = search_papers_by_keywords(keywords=keywords)
-    update_wordcnt(keywords)
+    keyword_filtered_papers = search_papers_by_keywords(keywords=keywords)
+    if not setting_cache: # 非个性化搜索时更新搜索词统计
+        update_wordcnt(keywords)
     if len(keyword_filtered_papers) > 20:
         keyword_filtered_papers = keyword_filtered_papers[:20]
 

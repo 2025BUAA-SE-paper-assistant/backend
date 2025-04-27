@@ -293,7 +293,7 @@ def create_abstract_report(request):
     elif paper_id:
         p = Paper.objects.filter(paper_id=paper_id).first()
         pdf_url = p.original_url.replace("abs/", "pdf/") + ".pdf"
-        local_path = settings.PAPERS_URL + str(p.paper_id) + ".pdf"
+        local_path = settings.PAPERS_URL + '/' + str(p.paper_id) + ".pdf"
         print(local_path)
         print(pdf_url)
         if not os.path.exists(local_path):
@@ -322,7 +322,7 @@ def create_abstract_report(request):
         upload_temp_docs_url = (
             f"http://{settings.REMOTE_MODEL_BASE_PATH}/knowledge_base/upload_temp_docs"
         )
-        local_path = local_path[1:] if local_path.startswith("/") else local_path
+        # local_path = local_path[1:] if local_path.startswith("/") else local_path
         print(local_path)
         files = [
             (
