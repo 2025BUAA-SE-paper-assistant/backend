@@ -675,3 +675,33 @@ def dau(request):
         timestamp__range=(start_time, end_time)
     ).values('user_id').distinct().count()
     return reply.success(data={'dau':dau_count}, msg="日活用户数获取成功")
+
+@require_http_methods('GET')
+def user_trend(request):
+    '''返回过去一周的用户总数和日活用户数'''
+    end_time = timezone.now()
+    start_time = end_time - timedelta(days=7)  # 7 days total (6 days ago to today)
+    
+    # Initialize empty lists for results
+    total_users = []
+    dau_counts = []
+    
+    # Calculate for each day
+    for day in range(7):
+        day_start = start_time + timedelta(days=day)
+        day_end = day_start + timedelta(days=1)
+        # Get distinct users for the day (DAU)
+        dau = UserActivityStat.objects.filter(
+            timestamp__range=(day_start, day_end)
+        ).values('user_id').distinct().count()
+        dau_counts.append(dau)
+        
+        total = User.objects.filter(
+            registration_date__lte=day_end
+        ).count()
+        total_users.append(total)
+    
+    return reply.success(data={
+        'total_users': total_users,
+        'dau': dau_counts
+    }, msg="用户趋势数据获取成功")
