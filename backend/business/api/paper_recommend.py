@@ -242,6 +242,7 @@ def personal_recommend(request):
         # 挂一个线程去刷新缓存
         import threading
         t = threading.Thread(target=refresh_personal_recommend_cache, args=(user,))
+        t.daemon = True  # 设置为守护线程
         t.start()
         # 返回默认的五个问题
         topic_names = ['目标检测', '图像去噪', '动作识别', '对抗样本攻击', '三维重建']
