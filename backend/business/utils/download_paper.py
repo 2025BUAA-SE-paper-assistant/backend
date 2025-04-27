@@ -4,7 +4,7 @@ import requests
 from business.models.paper import Paper
 from backend.settings import PAPERS_PATH
 import os
-import fitz
+import fitz  # 确保导入 PyMuPDF
 
 
 if not os.path.exists(PAPERS_PATH):
@@ -15,8 +15,8 @@ def downloadPaper(url, filename):
     """
     下载文献到服务器
     """
-    os.environ['http_proxy'] = 'http://127.0.0.1:7890'
-    os.environ['https_proxy'] = 'http://127.0.0.1:7890'
+    # os.environ['http_proxy'] = 'http://127.0.0.1:7890'
+    # os.environ['https_proxy'] = 'http://127.0.0.1:7890'
     path = os.path.join(PAPERS_PATH, filename) if filename.endswith('.pdf') else os.path.join(PAPERS_PATH, filename + '.pdf')
     if os.path.exists(path):
         return path
@@ -35,9 +35,9 @@ def downloadPaper(url, filename):
             for i, block in enumerate(blocks):
                 block_list = list(block)
                 paragraph_with_page = {
-                            "page_num": page_num,
-                            "block": block_list
-                        }
+                    "page_num": page_num,
+                    "block": block_list
+                }
                 paragrahs.append(json.dumps(paragraph_with_page))
         paper.paragraph = json.dumps(paragrahs)
         paper.save()

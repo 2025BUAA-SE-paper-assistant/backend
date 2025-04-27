@@ -108,7 +108,7 @@ pydantic_core==2.18.1
 pydot==3.0.4
 PyJWT==2.9.0
 pymilvus==2.4.0
-PyMuPDF==1.25.5
+PyMuPDF==1.25.4
 PyMySQL==1.1.0
 pyparsing==3.2.3
 PyPDF2==3.0.1
