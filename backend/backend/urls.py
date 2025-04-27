@@ -145,6 +145,7 @@ urlpatterns = [
     path("api/search/wordTrend", manage.word_trend),
     path('api/manage/activityTime', manage.hours_activity),
     path('api/manage/dau',manage.dau),
+    path('api/manage/userTrend', manage.user_trend),
     # 信息检索模块
     path("api/search/easyVectorQuery", easy_vector_query),
     path("api/search/vectorQuery", vector_query),
