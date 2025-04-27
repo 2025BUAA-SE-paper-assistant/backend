@@ -23,21 +23,25 @@ def translate_text(request):
     }
 
     payload = json.dumps(data)
-
-    response = requests.post(settings.CHAT_CHAT_URL, data=payload, headers=headers, stream=False)
-    translated_text = ""
-    # 捕获输出
-    for line in response.iter_lines():
-        decoded_line = line.decode('utf-8')
-        print(decoded_line)
-        if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
-            continue
-    # print(decoded_line)
-        if decoded_line.startswith('data'):
-            data = json.loads(decoded_line.replace('data: ', ''))
-            translated_text += data['text']
-
-    # Return the translated text as a JSON response
-    return reply.success(
-        data={"target": translated_text}, msg="翻译成功"
-    )
+    try:
+        response = requests.post(settings.CHAT_CHAT_URL, data=payload, headers=headers, stream=False)
+        translated_text = ""
+        # 捕获输出
+        for line in response.iter_lines():
+            decoded_line = line.decode('utf-8')
+            print(decoded_line)
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+        # print(decoded_line)
+            if decoded_line.startswith('data'):
+                data = json.loads(decoded_line.replace('data: ', ''))
+                translated_text += data['text']
+        # Return the translated text as a JSON response
+        return reply.success(
+            data={"target": translated_text}, msg="翻译成功"
+        )
+    except Exception as e:
+        print(f"Error: {e}")
+        return reply.fail(
+            msg="无法连接远程服务器"
+        )
