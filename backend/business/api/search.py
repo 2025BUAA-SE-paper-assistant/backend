@@ -689,7 +689,7 @@ def update_search_record_2_paper(search_record, filtered_papers):
     for paper in filtered_papers:
         search_record.related_papers.add(paper)
 
-
+import re
 def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=False):
     # filtered_paper = search_paper_with_query(search_content, limit=200) 从这里改为使用服务器的查询接口
     vector_filtered_papers = get_filtered_paper(
@@ -717,7 +717,8 @@ def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=Fal
             keyword += data['text']
 
     # print(keyword)
-    keywords = keyword.split(", ")  # ["aa", "bb"]
+    # keywords = keyword.split(", ")  # ["aa", "bb"]
+    keywords = re.split(r'[，,]\s*', keyword)
     not_keywords = ["paper", "research", "article", "literature", "based", "literature"]
     for not_keyword in not_keywords:
         keywords = [keyword for keyword in keywords if not_keyword not in keyword]
