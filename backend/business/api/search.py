@@ -625,7 +625,7 @@ def queryGLM(msg: str, history=None) -> str:
     """
     对chatGLM3-6B发出一次单纯的询问
     """
-    print(msg)
+    # print(msg)
     chat_chat_url = "http://10.2.16.28:2334/chat/chat"
     headers = {"Content-Type": "application/json"}
     payload = json.dumps({"query": msg, "prompt_name": "default", "temperature": 0.3})
@@ -644,18 +644,24 @@ def queryGLM(msg: str, history=None) -> str:
 
         # 确保正确处理分块响应
 
-        data = None
+        text = ''
+        print(response.text)
         for line in response.iter_lines():
             decoded_line = line.decode('utf-8')
             if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
                 continue
             if decoded_line.startswith('data'):
+                # print(decoded_line)
                 data = json.loads(decoded_line.replace('data: ', ''))
-            else:
-                data = decoded_line
-        if data is None or not isinstance(data, dict):
-            return "错误: 无法获取响应或响应格式不正确"
-        return data['text']
+                text += data['text']
+            # else:
+            #     data = decoded_line
+        # if data is None :
+        #     return "错误: 无法获取响应"
+        # elif isinstance(data, dict) and 'text' in data:
+        #     return data['text']
+        # return data
+        return text
     except requests.exceptions.ChunkedEncodingError as e:
         print(f"ChunkedEncodingError: {e}")
         return "错误: 响应提前结束"
@@ -1030,9 +1036,13 @@ def kb_ask_ai(payload):
     """
     file_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/file_chat"
     headers = {"Content-Type": "application/json"}
-    response = requests.request(
-        "POST", file_chat_url, data=payload, headers=headers, stream=False
-    )
+    # print(payload)
+    try:
+        response = requests.request(
+            "POST", file_chat_url, data=payload, headers=headers, stream=False
+        )
+    except requests.exceptions.RequestException as e:
+        print(f"RequestException: {e}")
     ai_reply = ""
     origin_docs = []
     print(response)
@@ -1135,7 +1145,7 @@ def dialog_query(request):
     papers = []
     dialog_type = ""
     content = ""
-    print(response_type)
+    # print(response_type)
     if "yes" in response_type:  # 担心可能有句号等等
         # 查询论文，TODO:接入向量化检索
         # filtered_paper = query_with_vector(message) # 旧版的接口，换掉了 2024.4.28
@@ -1144,7 +1154,7 @@ def dialog_query(request):
         papers = []
         for paper in filtered_paper:
             papers.append(paper.to_dict())
-        print(papers)
+        # print(papers)
         content = "根据您的需求，我们检索到了一些论文信息"
         # for i in range(len(papers)):
         #     content + '\n' + f'第{i}篇：'
@@ -1165,9 +1175,9 @@ def dialog_query(request):
             if len(history["conversation"]) > 5
             else history["conversation"].copy()
         )
-        print(input_history)
-        print("kb_id:", kb_id)
-        print("message:", message)
+        # print(input_history)
+        # print("kb_id:", kb_id)
+        # print("message:", message)
         payload = json.dumps(
             {
                 "query": message,
@@ -1181,6 +1191,8 @@ def dialog_query(request):
         dialog_type = "dialog"
         papers = []
         content = queryGLM("你叫epp论文助手，以你的视角重新转述这段话：" + ai_reply, [])
+        print('------------------')
+        print(content)
         history["conversation"].extend([{"role": "user", "content": message}])
         history["conversation"].extend([{"role": "assistant", "content": content}])
     with open(conversation_path, "w", encoding="utf-8") as f:
