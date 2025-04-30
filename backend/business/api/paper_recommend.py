@@ -266,10 +266,19 @@ def personal_recommend(request):
         ]
     return reply.success(data={"personal_recommend": data}, msg="成功返回个性化推荐")
 
-
+from business.models.statistic import UserActivityStat
 @require_http_methods(["POST"])
 def refresh_personal_recommend(request):
-    users = User.objects.all()
+    # users = User.objects.all()
+    # 仅为过去三天的活跃用户设置缓存
+    end_time = timezone.now()
+    start_time = end_time - timedelta(days=3)
+    user_ids = list(UserActivityStat.objects.filter(
+        timestamp__range=(start_time, end_time)
+    ).values_list('user_id', flat=True).distinct())
+    print(user_ids)
+    users = User.objects.filter(user_id__in=user_ids).all()
+    print(users)
     max_retries = 3
     for user in users:
         for attempt in range(max_retries):
