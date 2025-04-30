@@ -632,7 +632,26 @@ def word_trend(request):
         .annotate(total=Sum('count'))
         .order_by('-total')[:10]  # 按总频次降序取前10
     )
-
+    pre_keywords = {
+            'Computing Chips':7,
+            'Information Management':3,
+            'AI4Science':8,
+            'Million-Token Context':2,
+            'Quantum Computing':6,
+            'AI Infra':5,
+            'Multimodal':1,
+            'Data Security':9,
+            'HPC Competitions':4,
+            'AI-Industry':10,
+        }
+    # 如果热搜词不足十个，利用预设的热搜词补齐
+    hot_keywords = list(hot_keywords)
+    if len(hot_keywords) < 10:
+        for keyword, count in pre_keywords.items():
+            if keyword not in [item['keyword'] for item in hot_keywords]:
+                hot_keywords.append({'keyword': keyword, 'total': count})
+                if len(hot_keywords) >= 10:
+                    break
     # 构造响应数据
     data = [
         {'keyword': item['keyword'], 'count': item['total']}
