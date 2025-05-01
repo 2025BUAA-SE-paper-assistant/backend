@@ -4,6 +4,7 @@
 from django.db import models
 import uuid
 
+from business.utils.deep_translate import DeepSeek
 from business.utils import storage
 from .subclass import Subclass
 
@@ -32,6 +33,7 @@ class Paper(models.Model):
     title = models.CharField(max_length=255)
     authors = models.CharField(max_length=255)  # 多个作者','分隔
     abstract = models.TextField()
+    abstract_cn = models.TextField(null=True)  # 中文摘要，允许为空
     publication_date = models.DateField()
     journal = models.CharField(max_length=255, null=True)  # 期刊允许为空
     citation_count = models.IntegerField(default=0)
@@ -65,6 +67,7 @@ class Paper(models.Model):
             'title': self.title,
             'authors': self.authors,
             'abstract': self.abstract,
+            'abstract_cn': self.abstract_cn if self.abstract_cn else DeepSeek().translate_text(self.abstract),
             'publication_date': self.publication_date,
             'journal': self.journal,
             'citation_count': self.citation_count,

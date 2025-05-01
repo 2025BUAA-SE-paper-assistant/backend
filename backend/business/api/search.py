@@ -674,7 +674,7 @@ from django.views.decorators.http import require_http_methods
 from business.models.paper import Paper
 
 
-def search_papers_by_keywords(keywords):
+def search_papers_by_keywords(keywords,auhtor=""):
     # 初始化查询条件，此时没有任何条件，查询将返回所有Paper对象
     query = Q()
 
@@ -683,7 +683,7 @@ def search_papers_by_keywords(keywords):
         query |= Q(title__icontains=keyword) | Q(abstract__icontains=keyword)
 
     # 使用累积的查询条件执行查询
-    result = Paper.objects.filter(query)
+    result = Paper.objects.filter(query,authors__icontains=auhtor)
     filtered_paper_list = []
     for paper in result:
         filtered_paper_list.append(paper)
@@ -696,7 +696,7 @@ def update_search_record_2_paper(search_record, filtered_papers):
         search_record.related_papers.add(paper)
 
 import re
-def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=False):
+def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=False,auhtor=""):
     # filtered_paper = search_paper_with_query(search_content, limit=200) 从这里改为使用服务器的查询接口
     vector_filtered_papers = get_filtered_paper(
         search_content, k=100, threshold=0.3
@@ -728,7 +728,7 @@ def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=Fal
     not_keywords = ["paper", "research", "article", "literature", "based", "literature"]
     for not_keyword in not_keywords:
         keywords = [keyword for keyword in keywords if not_keyword not in keyword]
-    keyword_filtered_papers = search_papers_by_keywords(keywords=keywords)
+    keyword_filtered_papers = search_papers_by_keywords(keywords=keywords,auhtor=auhtor)
     if not setting_cache: # 非个性化搜索时更新搜索词统计
         update_wordcnt(keywords)
     if len(keyword_filtered_papers) > 20:
@@ -755,7 +755,7 @@ def search_my_model(query_string):
     return results
 
 
-def do_string_search(search_content):
+def do_string_search(search_content, auhtor=""):
     pattern = r"[,\s!?.]+"
     search_terms = re.split(pattern, search_content)
     search_terms = [token for token in search_terms if token]
@@ -764,7 +764,7 @@ def do_string_search(search_content):
     for term in search_terms:
         query |= Q(title__icontains=term)
     # 执行查询，获取字符串检索的并集结果
-    results = Paper.objects.filter(query)
+    results = Paper.objects.filter(query, authors__icontains=auhtor)
     print(results)
     # 计算编辑距离并排序
     results_with_distance = []
@@ -827,6 +827,7 @@ def vector_query(request):
     search_content = request_data.get("search_content")
     search_type = request_data.get("search_type")
     search_record_id = request_data.get("search_record_id")
+    author = request_data.get("author")
     if search_record_id is None:
         search_record = SearchRecord(
             user_id=user, keyword=search_content, conversation_path=None
@@ -859,9 +860,9 @@ def vector_query(request):
     headers = {"Content-Type": "application/json"}
 
     if search_type == "dialogue":
-        filtered_papers = do_dialogue_search(search_content, chat_chat_url, headers)
+        filtered_papers = do_dialogue_search(search_content, chat_chat_url, headers,auhtor=author)
     else:
-        filtered_papers = do_string_search(search_content)
+        filtered_papers = do_string_search(search_content,author)
         if len(filtered_papers) == 0:
             return JsonResponse(
                 {
@@ -1041,11 +1042,12 @@ def kb_ask_ai(payload):
         response = requests.request(
             "POST", file_chat_url, data=payload, headers=headers, stream=False
         )
-    except requests.exceptions.RequestException as e:
-        print(f"RequestException: {e}")
+    except Exception as e:
+        print(f"Exception: {e}")
+        return "错误: 无法获取响应", []
     ai_reply = ""
     origin_docs = []
-    print(response)
+    # print(response)
     for line in response.iter_lines():
         if line:
 

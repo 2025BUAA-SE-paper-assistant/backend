@@ -165,6 +165,7 @@ def easy_vector_query(request):
     request_data = json.loads(request.body)
     texts = request_data["texts"]
     k = request_data["k"]
+    author = request_data.get("author")
     if not k:
         k = 20
     if not isinstance(texts, list):
@@ -179,7 +180,8 @@ def easy_vector_query(request):
     for d, i in zip(distances[0], indices[0]):
         i2d_dict[metadata[i]] = d
     paper_ids = [metadata[i] for i in indices[0]]
-    filtered_paper = Paper.objects.filter(paper_id__in=paper_ids)
+    # filtered_paper = Paper.objects.filter(paper_id__in=paper_ids)
+    filtered_paper = Paper.objects.filter(paper_id__in=paper_ids, authors__contains=author if author else "")
     paper_dict = []
     for p in filtered_paper:
         p_dict = p.to_dict()

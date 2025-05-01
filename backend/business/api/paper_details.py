@@ -9,6 +9,7 @@ import time
 import zipfile
 import os
 from django.http import JsonResponse
+from business.utils.deep_translate import DeepSeek
 from wrap.content import validate_content
 from business.utils.reply import content_error
 from scripts.check import GreenCheck
@@ -438,12 +439,17 @@ def get_paper_info(request):
         paper_id = request.GET.get("paper_id")
         paper = Paper.objects.filter(paper_id=paper_id).first()
         if paper:
+            if not paper.abstract_cn:
+                abstract_cn = DeepSeek().translate_text(paper.abstract)
+                paper.abstract_cn = abstract_cn
+                paper.save()
             response = {
                 "message": "获取成功",
                 "paper_id": paper.paper_id,
                 "title": paper.title,
                 "authors": paper.authors,
                 "abstract": paper.abstract,
+                "abstract_cn": paper.abstract_cn,
                 "publication_date": paper.publication_date.strftime("%Y-%m-%d"),
                 "journal": paper.journal,
                 "citation_count": paper.citation_count,
