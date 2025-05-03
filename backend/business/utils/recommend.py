@@ -90,6 +90,8 @@ def get_personal_questions(user):
 def get_personal_key(user):
     return f'recommendation_{user.user_id}'
 
+import logging
+logger = logging.getLogger('business')
 def refresh_personal_recommend_cache(user):
     '''将基于用户的推荐问题以及推荐文献写入缓存,缓存一天'''
     questions = get_personal_questions(user)
@@ -102,4 +104,5 @@ def refresh_personal_recommend_cache(user):
     ]
     cache_key = get_personal_key(user)
     cache.set(cache_key, cached_data, timeout=24 * 60 * 60)  # 缓存一天
+    logger.info(f"Successfully set cache for user {user.user_id}")
 
