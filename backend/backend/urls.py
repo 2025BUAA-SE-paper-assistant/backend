@@ -51,6 +51,7 @@ from business.api.paper_details import (
     get_second_comment,
     like_comment,
     get_user_paper_info,
+    refrech_abstract_cn,
 )
 from business.api.upload_document import (
     upload_paper,
@@ -104,6 +105,7 @@ urlpatterns = [
     path("api/commentPaper", comment_paper),
     path("api/batchDownload", batch_download_papers),
     path("api/getPaperInfo", get_paper_info),
+    path("api/refreshAbstractCN", refrech_abstract_cn),
     path("api/getComment1", get_first_comment),
     path("api/getComment2", get_second_comment),
     path("api/likeComment", like_comment),

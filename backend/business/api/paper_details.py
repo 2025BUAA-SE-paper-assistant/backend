@@ -429,6 +429,33 @@ def batch_download_papers(request):
             )
     else:
         return JsonResponse({"error": "请求方法错误", "is_success": False}, status=400)
+import tqdm
+def refrech_abstract_cn(request):
+    """
+    刷新文献的中文摘要
+    """
+    max_retries = 3
+    if request.method == "POST":
+        papers = Paper.objects.all()
+        for paper in tqdm.tqdm(papers):
+            if not paper.abstract_cn:
+                # abstract_cn = DeepSeek().translate_text(paper.abstract)
+                attempt = 1
+                while attempt <= max_retries:
+                    try:
+                        abstract_cn = translate(paper.abstract)
+                        paper.abstract_cn = abstract_cn
+                        paper.save()
+                        break
+                    except Exception as e:
+                        if attempt == max_retries:
+                            logging.error(f"翻译失败: {e}-{paper.paper_id}")
+                            break
+                        attempt += 1
+
+        return JsonResponse({"message": "刷新成功", "is_success": True})
+    else:
+        return JsonResponse({"error": "请求方法错误", "is_success": False}, status=400)
 
 from business.api.translate import translate
 def get_paper_info(request):
@@ -472,7 +499,6 @@ def get_paper_info(request):
             )
     else:
         return JsonResponse({"error": "请求方法错误", "is_success": False}, status=400)
-
 
 def get_user_paper_info(request):
     """
