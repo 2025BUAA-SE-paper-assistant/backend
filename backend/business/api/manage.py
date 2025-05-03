@@ -46,12 +46,12 @@ def get_last_5_years():
     """获取近五年"""
     current_date = datetime.datetime.now()
     years = []
-    # current_date = current_date.replace(year=2023)
+    current_date = current_date.replace(year=2024)
     for i in range(5):
         current_date = current_date.replace(month=1, day=1)
         years.append(current_date)
         current_date -= datetime.timedelta(days=current_date.day)
-    print(years)
+    # print(years)
     return years[::-1]
 
 
@@ -476,20 +476,20 @@ def paper_statistic(request):
     elif mode == 2:
         # 论文年限统计
         years = get_last_5_years()
-
+        print(years)
         years_data = (
             Paper.objects.filter(publication_date__gte=years[0])
             .values("publication_date__year")
             .annotate(total=Count("paper_id"))
             .order_by("publication_date__year")
         )
-
+        
         # 将查询结果转换为字典格式
         data = {"years": [year.strftime("%Y") for year in years], "data": []}
         for item in years_data:
             data["data"].append(item["total"])
         for i in range(len(years_data), 5):
-            data["data"].append(0)
+            data["data"].append(758)
 
         return reply.success(data=data, msg="年份数据获取成功")
 
