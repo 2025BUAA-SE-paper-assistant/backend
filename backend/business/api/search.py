@@ -771,7 +771,7 @@ def do_string_search(search_content, author=""):
         results = Paper.objects.filter(query, authors__icontains=author)
     else:
         results = Paper.objects.filter(query)
-    print(results)
+    # print(results)
     # 计算编辑距离并排序
     results_with_distance = []
     for result in results:
@@ -922,14 +922,14 @@ def vector_query(request):
         lines = response.iter_lines()
         for line in lines:
             decoded_line = line.decode("utf-8")
-            print(decoded_line)
+            # print(decoded_line)
 
             if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
                 continue
             if decoded_line.startswith('data'):
                 data = json.loads(decoded_line.replace('data: ', ''))
                 ai_reply += data['text']
-            print(f'ai_reply: {ai_reply}')
+            # print(f'ai_reply: {ai_reply}')
     else:
         return reply.fail(msg="检索总结失败，请检查网络并重新尝试")
 
@@ -1195,12 +1195,12 @@ def dialog_query(request):
             }
         )
         ai_reply, origin_docs = kb_ask_ai(payload)
-        print(ai_reply)
+        # print(ai_reply)
         dialog_type = "dialog"
         papers = []
         content = queryGLM("你叫epp论文助手，以你的视角重新转述这段话：" + ai_reply, [])
-        print('------------------')
-        print(content)
+        # print('------------------')
+        # print(content)
         history["conversation"].extend([{"role": "user", "content": message}])
         history["conversation"].extend([{"role": "assistant", "content": content}])
     with open(conversation_path, "w", encoding="utf-8") as f:
@@ -1347,6 +1347,6 @@ def simple_query(request):
                 if len(word) >= 2
                 and word not in stopwords
                 and word not in not_keywords]
-    print(filtered)
+    # print(filtered)
     update_wordcnt(filtered)
     return JsonResponse({'msg': '搜索成功'}, status=200)

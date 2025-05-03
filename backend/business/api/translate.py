@@ -29,7 +29,7 @@ def translate_text(request):
         # 捕获输出
         for line in response.iter_lines():
             decoded_line = line.decode('utf-8')
-            print(decoded_line)
+            # print(decoded_line)
             if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
                 continue
         # print(decoded_line)

@@ -38,7 +38,7 @@ def queryGLM(msg: str, history=None) -> str:
     """
     对chatGLM3-6B发出一次单纯的询问
     """
-    print(msg)
+    # print(msg)
     chat_chat_url = "http://10.2.16.28:2334/chat/chat"
     headers = {"Content-Type": "application/json"}
     payload = json.dumps({"query": msg, "prompt_name": "default", "temperature": 0.3})
@@ -62,7 +62,7 @@ def queryGLM(msg: str, history=None) -> str:
             decoded_line = line.decode("utf-8")
             if decoded_line.startswith(": ping"):  # 忽略以 ":" 开头的行
                 continue
-            print(decoded_line)
+            # print(decoded_line)
             if decoded_line.startswith("data"):
                 data = json.loads(decoded_line.replace("data: ", ""))
             else:

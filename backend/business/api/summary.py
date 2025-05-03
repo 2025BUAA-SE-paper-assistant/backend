@@ -26,7 +26,7 @@ def queryGLM(msg: str, history=None) -> str:
     """
     对chatGLM3-6B发出一次单纯的询问
     """
-    print(msg)
+    # print(msg)
     chat_chat_url = "http://10.2.16.28:2334/chat/chat"
     headers = {"Content-Type": "application/json"}
     payload = json.dumps({"query": msg, "prompt_name": "default", "temperature": 0.3})
@@ -127,7 +127,7 @@ def get_summary(paper_ids, report_id):
         report.status = SummaryReport.STATUS_COMPLETED
         report.save()
         # os.remove(md_path)
-        print(response)
+        # print(response)
     except Exception as e:
         print(e)
         report.delete()
@@ -234,7 +234,7 @@ def create_tmp_knowledge_base(dir: str) -> str:
                 )
             )
     response = requests.request("POST", upload_temp_docs_url, files=files)
-    print(response)
+    # print(response)
     # 关闭文件，防止内存泄露
     for k, v in files:
         v[1].close()
@@ -254,7 +254,7 @@ def ask_ai_single_paper(payload):
     )
     ai_reply = ""
     origin_docs = []
-    print(response)
+    # print(response)
     for line in response.iter_lines():
         if line:
 
@@ -497,9 +497,9 @@ class abs_gen_thread(threading.Thread):
         summary += "## 结论\n" + response_conclusion + "\n"
 
         # 修改语病，更加通顺
-        print(summary)
+        # print(summary)
         response = summary
-        print(response)
+        # print(response)
         with open(self.report_path, "w", encoding="utf-8") as f:
             f.write(response)
         ar.report_path = self.report_path
