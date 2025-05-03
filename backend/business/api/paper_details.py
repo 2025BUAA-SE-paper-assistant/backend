@@ -430,7 +430,7 @@ def batch_download_papers(request):
     else:
         return JsonResponse({"error": "请求方法错误", "is_success": False}, status=400)
 
-
+from business.api.translate import translate
 def get_paper_info(request):
     """
     获取文献信息
@@ -440,7 +440,8 @@ def get_paper_info(request):
         paper = Paper.objects.filter(paper_id=paper_id).first()
         if paper:
             if not paper.abstract_cn:
-                abstract_cn = DeepSeek().translate_text(paper.abstract)
+                # abstract_cn = DeepSeek().translate_text(paper.abstract)
+                abstract_cn = translate(paper.abstract)
                 paper.abstract_cn = abstract_cn
                 paper.save()
             response = {

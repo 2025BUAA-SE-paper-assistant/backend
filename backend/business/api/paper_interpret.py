@@ -779,7 +779,7 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
                             for doc in data["docs"]:
                                 doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
                                 origin_docs.append(doc)
-        print("最终输出：",ai_reply)                        
+        # print("最终输出：",ai_reply)                        
         return ai_reply, origin_docs
     
     def _get_ai_reply(payload):
@@ -834,9 +834,9 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
             }
         )
         question_reply, _ = _get_ai_reply(payload)
-        print(question_reply)
+        # print(question_reply)
         question_reply = re.findall(r'"prediction_\d+":\s*"([^"]+)"', question_reply)
-        print(question_reply)
+        # print(question_reply)
         question_reply = question_reply[:2]
         question_reply.append("针对上一个问题做更详细的回复")
         return question_reply
@@ -896,7 +896,7 @@ def do_paper_study(request):
     with open(fr.conversation_path, "r") as f:
         conversation_history = json.load(f)
 
-    print(tmp_kb_id)
+    # print(tmp_kb_id)
     conversation_history = list(conversation_history.get("conversation"))  # List[Dict]
     # print(conversation_history, query, tmp_kb_id)
     ai_reply, origin_docs, question_reply = do_file_chat(
