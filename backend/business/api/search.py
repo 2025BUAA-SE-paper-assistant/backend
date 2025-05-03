@@ -866,18 +866,18 @@ def vector_query(request):
     headers = {"Content-Type": "application/json"}
 
     if search_type == "dialogue":
-        filtered_papers = do_dialogue_search(search_content, chat_chat_url, headers,auhtor=author)
+        filtered_papers = do_dialogue_search(search_content, chat_chat_url, headers,author=author)
     else:
         filtered_papers = do_string_search(search_content,author)
-        if len(filtered_papers) == 0:
-            return JsonResponse(
-                {
-                    "paper_infos": [],
-                    "ai_reply": "EPP助手哭哭惹，很遗憾未能检索出相关论文。",
-                    "search_record_id": search_record.search_record_id,
-                },
-                status=200,
-            )
+    if len(filtered_papers) == 0:
+        return JsonResponse(
+            {
+                "paper_infos": [],
+                "ai_reply": "EPP助手哭哭惹，很遗憾未能检索出相关论文。",
+                "search_record_id": search_record.search_record_id,
+            },
+            status=200,
+    )
 
     start_year = min([paper.publication_date.year for paper in filtered_papers])
     end_year = max([paper.publication_date.year for paper in filtered_papers])
