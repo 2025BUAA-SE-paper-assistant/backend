@@ -873,7 +873,7 @@ def vector_query(request):
         return JsonResponse(
             {
                 "paper_infos": [],
-                "ai_reply": "EPP助手哭哭惹，很遗憾未能检索出相关论文。",
+                "ai_reply": "PHD助手哭哭惹，很遗憾未能检索出相关论文。",
                 "search_record_id": search_record.search_record_id,
             },
             status=200,
@@ -893,7 +893,7 @@ def vector_query(request):
     )
 
     ai_reply = (
-        f"根据您的需求，Epp论文助手检索到了【{len(filtered_papers)}】篇论文，其主要分布在【{start_year}】"
+        f"根据您的需求，PHD论文助手检索到了【{len(filtered_papers)}】篇论文，其主要分布在【{start_year}】"
         f"到【{end_year}】之间，其中【{most_year}】这一年的论文数量最多，有【{cnt}】篇论文,"
         f"显示出近几年在该领域的研究活跃度较高。\n"
     )
