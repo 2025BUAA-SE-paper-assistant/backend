@@ -175,7 +175,7 @@ from wrap.content import validate_content
 #         [1 for paper in filtered_papers if paper.publication_date.year == most_year]
 #     )
 #     ai_reply += (
-#         f"根据您的需求，Epp论文助手检索到了【{len(filtered_papers)}】篇论文，其主要分布在【{start_year}】"
+#         f"根据您的需求，PHD论文助手检索到了【{len(filtered_papers)}】篇论文，其主要分布在【{start_year}】"
 #         f"到【{end_year}】之间，其中【{most_year}】这一年的论文数量最多，有【{cnt}】篇论文,"
 #         f"显示出近几年在该领域的研究活跃度较高。\n"
 #     )
@@ -497,7 +497,7 @@ from wrap.content import validate_content
 #         print(ai_reply)
 #         dialog_type = "dialog"
 #         papers = []
-#         content = queryGLM("你叫epp论文助手，以你的视角重新转述这段话：" + ai_reply, [])
+#         content = queryGLM("你叫PHD论文助手，以你的视角重新转述这段话：" + ai_reply, [])
 #         history["conversation"].extend([{"role": "user", "content": message}])
 #         history["conversation"].extend([{"role": "assistant", "content": content}])
 #     with open(conversation_path, "w", encoding="utf-8") as f:
@@ -1198,7 +1198,7 @@ def dialog_query(request):
         # print(ai_reply)
         dialog_type = "dialog"
         papers = []
-        content = queryGLM("你叫epp论文助手，以你的视角重新转述这段话：" + ai_reply, [])
+        content = queryGLM("你叫PHD论文助手，以你的视角重新转述这段话：" + ai_reply, [])
         # print('------------------')
         # print(content)
         history["conversation"].extend([{"role": "user", "content": message}])

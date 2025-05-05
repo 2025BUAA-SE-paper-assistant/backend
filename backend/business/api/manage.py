@@ -287,7 +287,7 @@ def judge_comment_report(request):
             Notification(
                 user_id=comment.user_id,
                 title="您的评论被举报了！",
-                content=f"您在 {comment.date.strftime('%Y-%m-%d %H:%M:%S')} 对论文《{comment.paper_id.title}》的评论内容 \"{comment.text}\" 被其他用户举报，根据EPP平台管理规定，检测到您的评论确为不合规，该评论现已删除。\n请注意遵守平台评论规范，理性发言！",
+                content=f"您在 {comment.date.strftime('%Y-%m-%d %H:%M:%S')} 对论文《{comment.paper_id.title}》的评论内容 \"{comment.text}\" 被其他用户举报，根据PHD平台管理规定，检测到您的评论确为不合规，该评论现已删除。\n请注意遵守平台评论规范，理性发言！",
             ).save()
         else:
             # 取消屏蔽
@@ -330,7 +330,7 @@ def judge_comment_report(request):
 #     level = report.comment_level
 #     if level == 1:
 #         Notification(user_id=report.comment_id_1.user_id, title="您的评论被举报了！",
-#                      content=f"您在 {report.comment_id_1.date.strftime('%Y-%m-%d %H:%M:%S')} 对论文《{report.comment_id_1.paper_id.title}》的评论内容 \"{report.comment_id_1.text}\" 被其他用户举报，根据EPP平台管理规定，检测到您的评论确为不合规，该评论现已删除。\n请注意遵守平台评论规范，理性发言！"
+#                      content=f"您在 {report.comment_id_1.date.strftime('%Y-%m-%d %H:%M:%S')} 对论文《{report.comment_id_1.paper_id.title}》的评论内容 \"{report.comment_id_1.text}\" 被其他用户举报，根据PHD平台管理规定，检测到您的评论确为不合规，该评论现已删除。\n请注意遵守平台评论规范，理性发言！"
 #                      ).save()
 #         report.comment_id_1.visibility = False
 #         report.comment_id_1.save()
@@ -339,7 +339,7 @@ def judge_comment_report(request):
 #
 #     elif level == 2:
 #         Notification(user_id=report.comment_id_2.user_id, title="您的评论被举报了！",
-#                      content=f"您在 {report.comment_id_2.date.strftime('%Y-%m-%d %H:%M:%S')} 对论文《{report.comment_id_2.paper_id.title}》的评论内容 \"{report.comment_id_2.text}\" 被其他用户举报，根据EPP平台管理规定，检测到您的评论确为不合规，该评论现已删除。\n请注意遵守平台评论规范，理性发言！"
+#                      content=f"您在 {report.comment_id_2.date.strftime('%Y-%m-%d %H:%M:%S')} 对论文《{report.comment_id_2.paper_id.title}》的评论内容 \"{report.comment_id_2.text}\" 被其他用户举报，根据PHD平台管理规定，检测到您的评论确为不合规，该评论现已删除。\n请注意遵守平台评论规范，理性发言！"
 #                      ).save()
 #         report.comment_id_2.visibility = False
 #         report.comment_id_2.save()
