@@ -8,6 +8,7 @@ import random
 import time
 import zipfile
 import os
+import requests
 from django.http import JsonResponse
 from business.utils.deep_translate import DeepSeek
 from wrap.content import validate_content
@@ -466,11 +467,16 @@ def get_paper_info(request):
         paper_id = request.GET.get("paper_id")
         paper = Paper.objects.filter(paper_id=paper_id).first()
         if paper:
+            bibtex = "none"
             if not paper.abstract_cn:
                 # abstract_cn = DeepSeek().translate_text(paper.abstract)
                 abstract_cn = translate(paper.abstract)
                 paper.abstract_cn = abstract_cn
                 paper.save()
+            bibtex = paper.original_url.replace("abs", "bibtex")
+            response = requests.get(bibtex, timeout=10)
+            if response.status_code == 200:
+                bibtex = response.text.strip()
             response = {
                 "message": "获取成功",
                 "paper_id": paper.paper_id,
@@ -489,6 +495,7 @@ def get_paper_info(request):
                 "score": paper.score,
                 "score_count": paper.score_count,
                 "original_url": paper.original_url,
+                "bibtex": bibtex,
                 "is_success": True,
                 "paragraph": paper.paragraph,
             }
