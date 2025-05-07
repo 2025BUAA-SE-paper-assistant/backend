@@ -1157,18 +1157,18 @@ def dialog_query(request):
     if "yes" in response_type:  # 担心可能有句号等等
         # 查询论文，TODO:接入向量化检索
         # filtered_paper = query_with_vector(message) # 旧版的接口，换掉了 2024.4.28
-        filtered_paper = get_filtered_paper(text=message, k=5)
+        filtered_paper = get_filtered_paper(text=message, k=100, threshold=0.3)
         dialog_type = "query"
         papers = []
         for paper in filtered_paper:
             papers.append(paper.to_dict())
-        # print(papers)
+        print(papers)
         content = "根据您的需求，我们检索到了一些论文信息"
-        # for i in range(len(papers)):
-        #     content + '\n' + f'第{i}篇：'
-        #     # TODO: 这里需要把papers的信息整理到content里面
-        #     content += f'标题为：{papers[i]["title"]}\n'
-        #     content += f'摘要为：{papers[i]["abstract"]}\n'
+        for i in range(len(papers)):
+            content + '\n' + f'第{i}篇：'
+            # TODO: 这里需要把papers的信息整理到content里面
+            content += f'标题为：{papers[i]["title"]}\n'
+            content += f'摘要为：{papers[i]["abstract"]}\n'
     else:
 
         ############################################################
