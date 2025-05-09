@@ -699,6 +699,22 @@ def update_search_record_2_paper(search_record, filtered_papers):
         search_record.related_papers.add(paper)
 
 import re
+def process_keyword(keyword):
+    # 处理 <回答>abc</回答> 的情况，提取中间内容
+    tag_match = re.search(r'<回答>(.*?)</回答>', keyword)
+    if tag_match:
+        keyword = tag_match.group(1)
+    
+    # 处理冒号后的内容，如 key:abc 或 key：abc
+    colon_match = re.match(r'^[^:：]*[:：]\s*(.*)$', keyword)
+    if colon_match:
+        keyword = colon_match.group(1)
+    
+    # 去除括号及其内容，如 abc(ABC) 或 abc（ABC）
+    keyword = re.sub(r'[（(].*?[）)]', '', keyword)
+    
+    return keyword.strip()
+
 def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=False,author=""):
     # filtered_paper = search_paper_with_query(search_content, limit=200) 从这里改为使用服务器的查询接口
     vector_filtered_papers = get_filtered_paper(
@@ -728,9 +744,11 @@ def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=Fal
     # print(keyword)
     # keywords = keyword.split(", ")  # ["aa", "bb"]
     keywords = re.split(r'[，,]\s*', keyword)
+    keywords = [process_keyword(kw) for kw in keywords]
     not_keywords = ["paper", "research", "article", "literature", "based", "literature"]
     for not_keyword in not_keywords:
         keywords = [keyword for keyword in keywords if not_keyword not in keyword]
+    print(f'keywords: {keywords}')
     keyword_filtered_papers = search_papers_by_keywords(keywords=keywords,author=author)
     if not setting_cache: # 非个性化搜索时更新搜索词统计
         update_wordcnt(keywords)
@@ -1191,7 +1209,7 @@ def dialog_query(request):
                 "query": message,
                 "knowledge_id": kb_id,
                 "history": list(input_history),
-                "prompt_name": "text",  # 使用历史记录对话模式
+                "prompt_name": "text_new",  # 使用历史记录对话模式
             }
         )
         ai_reply, origin_docs = kb_ask_ai(payload)
