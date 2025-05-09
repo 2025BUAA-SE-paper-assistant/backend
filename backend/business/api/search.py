@@ -745,10 +745,10 @@ def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=Fal
     # keywords = keyword.split(", ")  # ["aa", "bb"]
     keywords = re.split(r'[，,]\s*', keyword)
     keywords = [process_keyword(kw) for kw in keywords]
-    print(f'keywords: {keywords}')
     not_keywords = ["paper", "research", "article", "literature", "based", "literature"]
     for not_keyword in not_keywords:
         keywords = [keyword for keyword in keywords if not_keyword not in keyword]
+    print(f'keywords: {keywords}')
     keyword_filtered_papers = search_papers_by_keywords(keywords=keywords,author=author)
     if not setting_cache: # 非个性化搜索时更新搜索词统计
         update_wordcnt(keywords)
@@ -1209,7 +1209,7 @@ def dialog_query(request):
                 "query": message,
                 "knowledge_id": kb_id,
                 "history": list(input_history),
-                "prompt_name": "text",  # 使用历史记录对话模式
+                "prompt_name": "text_new",  # 使用历史记录对话模式
             }
         )
         ai_reply, origin_docs = kb_ask_ai(payload)
