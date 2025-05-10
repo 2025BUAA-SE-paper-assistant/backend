@@ -1175,7 +1175,41 @@ def dialog_query(request):
     if "yes" in response_type:  # 担心可能有句号等等
         # 查询论文，TODO:接入向量化检索
         # filtered_paper = query_with_vector(message) # 旧版的接口，换掉了 2024.4.28
-        filtered_paper = get_filtered_paper(text=message, k=100, threshold=0.3)
+        data = {
+        # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
+            "query": f"{message}",
+            "knowledge_id": kb_id,
+            "temperature": 0.3,
+            "stream": True,
+            "model_name": "chatglm3-6b",
+            "prompt_name": "academic_search_query_refiner",
+        }
+        optimized_query = message
+        payload_opt = json.dumps(data)
+        ai_reply_opt, origin_docs_ = kb_ask_ai(payload=payload_opt)
+        print(ai_reply_opt)
+        try:
+            # 尝试将字符串转换为字典
+            data_dict = json.loads(ai_reply_opt)
+            # 捕获优化后的查询信息
+            optimized_query = data_dict.get("优化后：", "")
+
+            if "优化后：" not in data_dict:
+                raise KeyError("缺少键'优化后：'")
+
+            print("优化后的查询信息是：")
+            print(optimized_query)
+        except json.JSONDecodeError as e:
+            # 捕获JSON解析错误
+            print(f"输入字符串格式不正确: {e}")
+        except KeyError as e:
+            # 捕获键不存在错误
+            print(f"字典中缺少必要的键: {e}")
+        except Exception as e:
+            # 捕获所有其他异常
+            print(f"发生了一个意外错误: {e}")
+        
+        filtered_paper = get_filtered_paper(text=optimized_query, k=100, threshold=0.3)
         dialog_type = "query"
         papers = []
         for paper in filtered_paper:
