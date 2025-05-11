@@ -720,7 +720,7 @@ def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=Fal
     vector_filtered_papers = get_filtered_paper(
         search_content, k=100, threshold=0.3
     )  # 这是新版的调用服务器模型的接口
-
+    print(f'vector len:{len(vector_filtered_papers)}')
     # 进行二次关键词检索
     # 首先获取关键词, 同样使用chatglm6b的普通对话
     payload = json.dumps(
