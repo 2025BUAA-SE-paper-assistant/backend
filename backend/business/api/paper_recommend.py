@@ -237,7 +237,11 @@ def personal_recommend(request):
         return reply.fail(msg="请先正确登录")
     cached_data = cache.get(get_personal_key(user))
     data = []
-    if cached_data is None:
+    # 检测是否所有的paper_ids都为空
+    empty_flag = cached_data is None or sum([len(item["paper_ids"]) for item in cached_data]) == 0
+    if cached_data is not None:
+        print(sum([len(item["paper_ids"]) for item in cached_data]))
+    if empty_flag:
         logger.info(f"用户 {user.user_id} 的个性化推荐缓存未命中，正在刷新...")
         # 挂一个线程去刷新缓存，但是数据库会同步操作等待
         import threading
@@ -253,17 +257,27 @@ def personal_recommend(request):
         data = [
             {
                 "question": questions[topic],
-                "paper_infos": list(Paper.objects.filter(sub_classes__name=topic).values()[:20]),
+                "paper_infos": list(Paper.objects.filter(sub_classes__name=topic).values()[:7]),
             } for topic in topic_names
         ]
     else:
-        data = [
-            {
-                "question": item["question"],
-                "paper_infos": list(Paper.objects.filter(paper_id__in=item["paper_ids"]).values()),
-            }
-            for item in cached_data
-        ]
+        # data = [
+        #     {
+        #         "question": item["question"],
+        #         "paper_infos": list(Paper.objects.filter(paper_id__in=item["paper_ids"]).values()),
+        #     }
+        #     for item in cached_data
+        # ]
+        data = []
+        for item in cached_data:
+            ret_item = {}
+            ret_item["question"] = item["question"]
+            paper_ids = item["paper_ids"]
+            # 随机从中取十篇
+            ret_ids = random.sample(paper_ids, min(7, len(paper_ids)))
+            ret_item["paper_infos"] = list(Paper.objects.filter(paper_id__in=ret_ids).values())
+            data.append(ret_item)
+    # 返回推荐问题以及对应的论文lis
     return reply.success(data={"personal_recommend": data}, msg="成功返回个性化推荐")
 
 from business.models.statistic import UserActivityStat
