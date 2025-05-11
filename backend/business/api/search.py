@@ -674,7 +674,7 @@ from django.views.decorators.http import require_http_methods
 from business.models.paper import Paper
 
 
-def search_papers_by_keywords(keywords,author=""):
+def search_papers_by_keywords(keywords,authors="",startTime=None,endTime=None,tags=None):
     # 初始化查询条件，此时没有任何条件，查询将返回所有Paper对象
     query = Q()
 
@@ -682,11 +682,23 @@ def search_papers_by_keywords(keywords,author=""):
     for keyword in keywords:
         query |= Q(title__icontains=keyword) | Q(abstract__icontains=keyword)
 
+    result = Paper.objects.filter(query)
+
     # 使用累积的查询条件执行查询
-    if(author):
-        result = Paper.objects.filter(query,authors__icontains=author)
-    else:
-        result = Paper.objects.filter(query)
+    if authors:
+        author_list = [author.strip() for author in authors.split(";")]  # 将authors分割成列表并去除多余空格
+        for author in author_list: # 对每个作者构建查询条件
+            result = result.filter(authors__icontains=author)  # 将作者过滤条件与其他条件结合
+
+    if startTime and endTime:
+        startTime = f"{startTime}-01-01"  # 年初
+        endTime = f"{endTime}-12-31"  # 年末
+        result = result.filter(publication_date__range=(startTime, endTime))
+    if tags:
+        tags_list = json.loads(tags)
+        for tag in tags_list:
+            result = result.filter(sub_classes__name__icontains=tag)  # 将标签过滤条件与其他条件结合
+
     filtered_paper_list = []
     for paper in result:
         filtered_paper_list.append(paper)
@@ -704,21 +716,20 @@ def process_keyword(keyword):
     tag_match = re.search(r'<回答>(.*?)</回答>', keyword)
     if tag_match:
         keyword = tag_match.group(1)
-    
+
     # 处理冒号后的内容，如 key:abc 或 key：abc
     colon_match = re.match(r'^[^:：]*[:：]\s*(.*)$', keyword)
     if colon_match:
         keyword = colon_match.group(1)
-    
+
     # 去除括号及其内容，如 abc(ABC) 或 abc（ABC）
     keyword = re.sub(r'[（(].*?[）)]', '', keyword)
-    
+
     return keyword.strip()
 
-def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=False,author=""):
-    # filtered_paper = search_paper_with_query(search_content, limit=200) 从这里改为使用服务器的查询接口
+def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=False,authors="",startTime=None,endTime=None,tags=None):
     vector_filtered_papers = get_filtered_paper(
-        search_content, k=100, threshold=0.3
+        search_content, k=100, threshold=0.3,authors=authors,startTime=startTime,endTime=endTime,tags=tags
     )  # 这是新版的调用服务器模型的接口
     print(f'vector len:{len(vector_filtered_papers)}')
     # 进行二次关键词检索
@@ -749,7 +760,7 @@ def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=Fal
     for not_keyword in not_keywords:
         keywords = [keyword for keyword in keywords if not_keyword not in keyword]
     print(f'keywords: {keywords}')
-    keyword_filtered_papers = search_papers_by_keywords(keywords=keywords,author=author)
+    keyword_filtered_papers = search_papers_by_keywords(keywords=keywords,authors=authors,startTime=startTime,endTime=endTime,tags=tags)
     if not setting_cache: # 非个性化搜索时更新搜索词统计
         update_wordcnt(keywords)
     if len(keyword_filtered_papers) > 20:
@@ -776,7 +787,7 @@ def search_my_model(query_string):
     return results
 
 
-def do_string_search(search_content, author=""):
+def do_string_search(search_content, author="",authors="",startTime=None,endTime=None,tags=None):
     pattern = r"[,\s!?.]+"
     search_terms = re.split(pattern, search_content)
     search_terms = [token for token in search_terms if token]
@@ -785,10 +796,21 @@ def do_string_search(search_content, author=""):
     for term in search_terms:
         query |= Q(title__icontains=term)
     # 执行查询，获取字符串检索的并集结果
-    if author:
-        results = Paper.objects.filter(query, authors__icontains=author)
-    else:
-        results = Paper.objects.filter(query)
+    result = Paper.objects.filter(query)
+    if authors:
+        author_list = [author.strip() for author in authors.split(";")]  # 将authors分割成列表并去除多余空格
+        for author in author_list:# 对每个作者构建查询条件
+            result = result.filter(authors__icontains=author)  # 将作者过滤条件与其他条件结合
+
+    if startTime and endTime:
+        startTime = f"{startTime}-01-01"  # 年初
+        endTime = f"{endTime}-12-31"  # 年末
+        result = result.filter(publication_date__range=(startTime, endTime))
+    if tags:
+        tags_list = json.loads(tags)
+        for tag in tags_list:
+            result = result.filter(sub_classes__name__icontains=tag)  # 将标签过滤条件与其他条件结合
+    results = result
     # print(results)
     # 计算编辑距离并排序
     results_with_distance = []
@@ -851,7 +873,11 @@ def vector_query(request):
     search_content = request_data.get("search_content")
     search_type = request_data.get("search_type")
     search_record_id = request_data.get("search_record_id")
-    author = request_data.get("author")
+    authors = request.GET.get("authors")
+    endTime = request.GET.get("endTime")
+    startTime = request.GET.get("startTime")
+    tags = request.GET.get("tags")
+
     if search_record_id is None:
         search_record = SearchRecord(
             user_id=user, keyword=search_content, conversation_path=None
@@ -884,9 +910,9 @@ def vector_query(request):
     headers = {"Content-Type": "application/json"}
 
     if search_type == "dialogue":
-        filtered_papers = do_dialogue_search(search_content, chat_chat_url, headers,author=author)
+        filtered_papers = do_dialogue_search(search_content, chat_chat_url, headers,authors=authors,endTime=endTime,startTime=startTime,tags=tags)
     else:
-        filtered_papers = do_string_search(search_content,author)
+        filtered_papers = do_string_search(search_content, authors=authors,endTime=endTime,startTime=startTime,tags=tags)
     if len(filtered_papers) == 0:
         return JsonResponse(
             {
@@ -1208,7 +1234,7 @@ def dialog_query(request):
         except Exception as e:
             # 捕获所有其他异常
             print(f"发生了一个意外错误: {e}")
-        
+
         papers = get_filtered_paper(text=message, k=10, threshold=0.3)
         dialog_type = "query"
         # papers = []
@@ -1222,7 +1248,7 @@ def dialog_query(request):
         #     # TODO: 这里需要把papers的信息整理到content里面
         #     content += f'标题为：{papers[i].title}\n'
         #     content += f'摘要为：{papers[i].abstract}\n'
-        
+
         if optimized_query != message :
             filtered_papers = get_filtered_paper(text=optimized_query, k=5, threshold=0.3)
             dialog_type = "query"
@@ -1236,7 +1262,7 @@ def dialog_query(request):
             #     # TODO: 这里需要把papers的信息整理到content里面
             #     content += f'标题为：{filtered_papers[i].title}\n'
             #     content += f'摘要为：{filtered_papers[i].abstract}\n'
-        
+
     else:
 
         ############################################################

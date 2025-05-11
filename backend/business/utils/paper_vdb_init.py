@@ -12,6 +12,7 @@ from urllib3 import Retry
 from wrap.content import validate_content
 from business.models import Paper
 from business.utils import reply
+from django.db.models import Q
 
 
 def get_all_paper():
@@ -122,7 +123,7 @@ def local_vdb_init(request):
     return reply.success({"success": "成功"})
 
 
-def get_filtered_paper(text, k, threshold=None):
+def get_filtered_paper(text, k, threshold=None,authors="",startTime=None,endTime=None,tags=None):
     os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
     faiss_path = os.path.join(
@@ -143,7 +144,21 @@ def get_filtered_paper(text, k, threshold=None):
     for d, i in zip(distances[0], indices[0]):
         i2d_dict[metadata[i]] = d
     paper_ids = [metadata[i] for i in indices[0]]
-    filtered_papers = Paper.objects.filter(paper_id__in=paper_ids)
+    result = Paper.objects.filter(paper_id__in=paper_ids)
+    if authors:
+        author_list = [author.strip() for author in authors.split(";")]  # 将authors分割成列表并去除多余空格
+        for author in author_list:# 对每个作者构建查询条件
+            result = result.filter(authors__icontains=author)  # 将作者过滤条件与其他条件结合
+
+    if startTime and endTime:
+        startTime = f"{startTime}-01-01"  # 年初
+        endTime = f"{endTime}-12-31"  # 年末
+        result = result.filter(publication_date__range=(startTime, endTime))
+    if tags:
+        tags_list = json.loads(tags)
+        for tag in tags_list:
+            result = result.filter(sub_classes__name__icontains=tag)  # 将标签过滤条件与其他条件结合
+    filtered_papers = result.all()
     ht_threshold_papers = []
     for p in filtered_papers:
         sim = i2d_dict[p.paper_id]
