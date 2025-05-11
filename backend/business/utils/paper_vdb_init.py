@@ -21,24 +21,27 @@ def get_all_paper():
         paper_id = paper.paper_id
         yield keyword, paper_id
 
-def false_embed(texts):
-    if not isinstance(texts, list):
-        texts = [texts]
+embeded_text_path = os.path.join(
+    settings.MEDIA_ROOT, "embeded_texts.json"
+)
+
+def embed_from_file(file_path):
     url = "http://10.2.16.28:2336/upload"
-    # json_file_path = "/usr/zjq/payload_output.json"
-    json_file_path = "payload_output.json"
-    with open('test.json', 'w') as wf:
-        json.dump({}, wf)
-    # 打开文件并发送POST请求
-    with open(json_file_path, "rb") as file:
-        files = {"files": (json_file_path, file, "application/json")}
+    with open(file_path, 'rb') as file:
+        files = {"files": (file_path, file, "application/json")}
         try:
             response = requests.post(url, files=files)
             response.raise_for_status()  # 如果响应状态码不是 2xx，会抛出异常
         except requests.exceptions.RequestException as e:
             print(f"Request failed: {e}")
             return None
-    return response.json()["data"]
+    return response.json()['data']
+
+def dump_embeded_texts(texts):
+    payload = json.dumps({"texts": texts})
+    with open(embeded_text_path, 'w', encoding='utf-8') as f:
+        f.write(payload)
+    print('dump embeded texts over!')
 
 def embed(texts):
     if not isinstance(texts, list):
@@ -72,6 +75,7 @@ def embed(texts):
     return response.json()["data"]
 
 
+
 def local_vdb_init(request):
     d = settings.VECTOR_DIM
 
@@ -82,7 +86,8 @@ def local_vdb_init(request):
         texts.append(keyword)
         metadata.append(paper_id)
     # embed_texts = embed(texts)
-    embed_texts = false_embed(texts)
+    dump_embeded_texts(texts)
+    embed_texts = embed_from_file(embeded_text_path)
     db_vectors = np.array(embed_texts).astype(np.float32)
 
     # 创建索引
