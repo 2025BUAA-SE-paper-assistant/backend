@@ -725,6 +725,13 @@ def process_keyword(keyword):
     # 去除括号及其内容，如 abc(ABC) 或 abc（ABC）
     keyword = re.sub(r'[（(].*?[）)]', '', keyword)
 
+
+    # 去除中文内容
+    keyword = re.sub(r'[\u4e00-\u9fa5]', '', keyword)
+
+    # 去除双引号，单引号
+    keyword = keyword.replace('"', '').replace("'", '').replace("’", '').replace("‘", '').replace("”", '').replace("“", '')
+
     return keyword.strip()
 
 def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=False,authors="",startTime=None,endTime=None,tags=None):
@@ -753,12 +760,12 @@ def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=Fal
             keyword += data['text']
 
     # print(keyword)
-    # keywords = keyword.split(", ")  # ["aa", "bb"]
+    # keywords = keyword.split(", ")  # ["aa", "bb"], 分割逗号
     keywords = re.split(r'[，,]\s*', keyword)
     keywords = [process_keyword(kw) for kw in keywords]
-    not_keywords = ["paper", "research", "article", "literature", "based", "literature"]
+    not_keywords = ["paper", "research", "article", "literature", "based", "literature",'related','latest']
     for not_keyword in not_keywords:
-        keywords = [keyword for keyword in keywords if not_keyword not in keyword]
+        keywords = [keyword for keyword in keywords if keyword and not_keyword not in keyword]
     print(f'keywords: {keywords}')
     keyword_filtered_papers = search_papers_by_keywords(keywords=keywords,authors=authors,startTime=startTime,endTime=endTime,tags=tags)
     if not setting_cache: # 非个性化搜索时更新搜索词统计
