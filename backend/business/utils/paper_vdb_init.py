@@ -37,18 +37,7 @@ def embed_from_file(file_path):
             return None
     return response.json()['data']
 
-from tqdm import tqdm
-def dump_embeded_texts():
-    papers = Paper.objects.all()
-    # 统一嵌入
-    texts = []
-    for paper in tqdm(papers):
-        # 获取 Paper 的 Title 和 Abstract
-        title = paper.title
-        abstract = paper.abstract
-        texts.append(title)
-        texts.append('.')
-        texts.append(abstract)
+def dump_embeded_texts(texts):
     payload = json.dumps({"texts": texts})
     with open(embeded_text_path, 'w', encoding='utf-8') as f:
         f.write(payload)
@@ -97,7 +86,7 @@ def local_vdb_init(request):
         texts.append(keyword)
         metadata.append(paper_id)
     # embed_texts = embed(texts)
-    dump_embeded_texts()
+    dump_embeded_texts(texts)
     embed_texts = embed_from_file(embeded_text_path)
     db_vectors = np.array(embed_texts).astype(np.float32)
 
