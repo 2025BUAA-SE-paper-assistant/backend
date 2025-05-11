@@ -1209,7 +1209,7 @@ def dialog_query(request):
             # 捕获所有其他异常
             print(f"发生了一个意外错误: {e}")
         
-        papers = get_filtered_paper(text=message, k=100, threshold=0.3)
+        papers = get_filtered_paper(text=message, k=10, threshold=0.3)
         dialog_type = "query"
         # papers = []
         # back_papers = []
@@ -1217,25 +1217,25 @@ def dialog_query(request):
         #     papers.append(paper)
         # print(papers)
         content = "根据您的需求，我们检索到了一些论文信息"
-        for i in range(len(papers)):
-            content + '\n' + f'第{i}篇：'
-            # TODO: 这里需要把papers的信息整理到content里面
-            content += f'标题为：{papers[i].title}\n'
-            content += f'摘要为：{papers[i].abstract}\n'
+        # for i in range(len(papers)):
+        #     content + '\n' + f'第{i}篇：'
+        #     # TODO: 这里需要把papers的信息整理到content里面
+        #     content += f'标题为：{papers[i].title}\n'
+        #     content += f'摘要为：{papers[i].abstract}\n'
         
         if optimized_query != message :
-            filtered_papers = get_filtered_paper(text=optimized_query, k=100, threshold=0.3)
+            filtered_papers = get_filtered_paper(text=optimized_query, k=5, threshold=0.3)
             dialog_type = "query"
             papers.extend(filtered_papers)
             # for paper in filtered_paper:
             #     back_papers.append(paper.to_dict())
             # print(back_papers)
             content += "同时，我们针对该研究背景检索到了一些论文信息作为补充"
-            for i in range(len(filtered_papers)):
-                content + '\n' + f'第{i}篇：'
-                # TODO: 这里需要把papers的信息整理到content里面
-                content += f'标题为：{filtered_papers[i].title}\n'
-                content += f'摘要为：{filtered_papers[i].abstract}\n'
+            # for i in range(len(filtered_papers)):
+            #     content + '\n' + f'第{i}篇：'
+            #     # TODO: 这里需要把papers的信息整理到content里面
+            #     content += f'标题为：{filtered_papers[i].title}\n'
+            #     content += f'摘要为：{filtered_papers[i].abstract}\n'
         
     else:
 
