@@ -1204,6 +1204,8 @@ def dialog_query(request):
     papers = []
     dialog_type = ""
     content = ""
+    papers_add = []
+    content_add = ''
     # print(response_type)
     if "yes" in response_type:  # 担心可能有句号等等
         # 查询论文，TODO:接入向量化检索
@@ -1259,11 +1261,13 @@ def dialog_query(request):
         if optimized_query != message :
             filtered_papers = get_filtered_paper(text=optimized_query, k=5, threshold=0.3)
             dialog_type = "query"
-            papers.extend(filtered_papers)
+            # papers.extend(filtered_papers)
+            papers_add = filtered_papers
             # for paper in filtered_paper:
             #     back_papers.append(paper.to_dict())
             # print(back_papers)
-            content += "同时，我们针对该研究背景检索到了一些论文信息作为补充"
+            # content += "同时，我们针对该研究背景检索到了一些论文信息作为补充"
+            content_add = "同时，我们针对该研究背景检索到了一些论文信息作为补充"
             # for i in range(len(filtered_papers)):
             #     content + '\n' + f'第{i}篇：'
             #     # TODO: 这里需要把papers的信息整理到content里面
@@ -1312,7 +1316,11 @@ def dialog_query(request):
     ret_papers = []
     for paper in papers:
         ret_papers.append(paper.to_dict())
-    res = {"dialog_type": dialog_type, "papers": ret_papers, "content": content}
+    ret_papers_add = []
+    for paper in papers_add:
+        ret_papers_add.append(paper.to_dict())
+    res = {"dialog_type": dialog_type, "papers": ret_papers, "content": content,
+           'papers_add':ret_papers_add, 'content_add':content_add}
     return reply.success(res, msg="成功返回对话")
 
 
