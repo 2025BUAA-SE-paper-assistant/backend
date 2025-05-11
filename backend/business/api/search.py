@@ -1179,7 +1179,7 @@ def dialog_query(request):
         # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
             "query": f"{message}",
             "knowledge_id": kb_id,
-            "temperature": 0.3,
+            "temperature": 0.2,
             "stream": True,
             "model_name": "chatglm3-6b",
             "prompt_name": "academic_search_query_refiner",
@@ -1209,7 +1209,7 @@ def dialog_query(request):
             # 捕获所有其他异常
             print(f"发生了一个意外错误: {e}")
         
-        filtered_paper = get_filtered_paper(text=optimized_query, k=100, threshold=0.3)
+        filtered_paper = get_filtered_paper(text=message, k=100, threshold=0.3)
         dialog_type = "query"
         papers = []
         for paper in filtered_paper:
@@ -1221,6 +1221,21 @@ def dialog_query(request):
             # TODO: 这里需要把papers的信息整理到content里面
             content += f'标题为：{papers[i]["title"]}\n'
             content += f'摘要为：{papers[i]["abstract"]}\n'
+        
+        if optimized_query != message :
+            filtered_paper = get_filtered_paper(text=optimized_query, k=100, threshold=0.3)
+            dialog_type = "query"
+            back_papers = []
+            for paper in filtered_paper:
+                back_papers.append(paper.to_dict())
+            print(back_papers)
+            content += "同时，我们针对该研究背景检索到了一些论文信息作为补充"
+            for i in range(len(back_papers)):
+                content + '\n' + f'第{i}篇：'
+                # TODO: 这里需要把papers的信息整理到content里面
+                content += f'标题为：{back_papers[i]["title"]}\n'
+                content += f'摘要为：{back_papers[i]["abstract"]}\n'
+        
     else:
 
         ############################################################
@@ -1257,7 +1272,8 @@ def dialog_query(request):
         history["conversation"].extend([{"role": "assistant", "content": content}])
     with open(conversation_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(history))
-    res = {"dialog_type": dialog_type, "papers": papers, "content": content}
+    all_papers = papers.union(back_papers)    
+    res = {"dialog_type": dialog_type, "papers": all_papers, "content": content}
     return reply.success(res, msg="成功返回对话")
 
 
