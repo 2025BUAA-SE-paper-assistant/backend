@@ -1209,32 +1209,33 @@ def dialog_query(request):
             # 捕获所有其他异常
             print(f"发生了一个意外错误: {e}")
         
-        filtered_paper = get_filtered_paper(text=message, k=100, threshold=0.3)
+        papers = get_filtered_paper(text=message, k=100, threshold=0.3)
         dialog_type = "query"
-        papers = []
-        for paper in filtered_paper:
-            papers.append(paper.to_dict())
-        print(papers)
+        # papers = []
+        # back_papers = []
+        # for paper in filtered_paper:
+        #     papers.append(paper)
+        # print(papers)
         content = "根据您的需求，我们检索到了一些论文信息"
         for i in range(len(papers)):
             content + '\n' + f'第{i}篇：'
             # TODO: 这里需要把papers的信息整理到content里面
-            content += f'标题为：{papers[i]["title"]}\n'
-            content += f'摘要为：{papers[i]["abstract"]}\n'
+            content += f'标题为：{papers[i].title}\n'
+            content += f'摘要为：{papers[i].abstract}\n'
         
         if optimized_query != message :
-            filtered_paper = get_filtered_paper(text=optimized_query, k=100, threshold=0.3)
+            filtered_papers = get_filtered_paper(text=optimized_query, k=100, threshold=0.3)
             dialog_type = "query"
-            back_papers = []
-            for paper in filtered_paper:
-                back_papers.append(paper.to_dict())
-            print(back_papers)
+            papers.extend(filtered_papers)
+            # for paper in filtered_paper:
+            #     back_papers.append(paper.to_dict())
+            # print(back_papers)
             content += "同时，我们针对该研究背景检索到了一些论文信息作为补充"
-            for i in range(len(back_papers)):
+            for i in range(len(filtered_papers)):
                 content + '\n' + f'第{i}篇：'
                 # TODO: 这里需要把papers的信息整理到content里面
-                content += f'标题为：{back_papers[i]["title"]}\n'
-                content += f'摘要为：{back_papers[i]["abstract"]}\n'
+                content += f'标题为：{filtered_papers[i].title}\n'
+                content += f'摘要为：{filtered_papers[i].abstract}\n'
         
     else:
 
@@ -1272,8 +1273,13 @@ def dialog_query(request):
         history["conversation"].extend([{"role": "assistant", "content": content}])
     with open(conversation_path, "w", encoding="utf-8") as f:
         f.write(json.dumps(history))
-    all_papers = papers.union(back_papers)    
-    res = {"dialog_type": dialog_type, "papers": all_papers, "content": content}
+    # s1 = set(papers)
+    # s2 = set(back_papers)
+    # all_papers = list(s1.union(s2))
+    ret_papers = []
+    for paper in papers:
+        ret_papers.append(paper.to_dict())
+    res = {"dialog_type": dialog_type, "papers": ret_papers, "content": content}
     return reply.success(res, msg="成功返回对话")
 
 
