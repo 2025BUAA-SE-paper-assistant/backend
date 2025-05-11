@@ -62,7 +62,7 @@ def dump_titles_and_abstracts():
         abstracts.append(abstract)
     payload_title = json.dumps({"texts": titles})
     payload_abstract = json.dumps({"texts": abstracts})
-    headers = {"Content-Type": "application/json"}
+    # headers = {"Content-Type": "application/json"}
     with open(title_json_path, 'w', encoding='utf-8') as f:
         f.write(payload_title)
     with open(abstract_json_path, 'w', encoding='utf-8') as f:
