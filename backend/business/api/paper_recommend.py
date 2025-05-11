@@ -257,7 +257,7 @@ def personal_recommend(request):
         data = [
             {
                 "question": questions[topic],
-                "paper_infos": list(Paper.objects.filter(sub_classes__name=topic).values()[:20]),
+                "paper_infos": list(Paper.objects.filter(sub_classes__name=topic).values()[:7]),
             } for topic in topic_names
         ]
     else:
@@ -274,7 +274,7 @@ def personal_recommend(request):
             ret_item["question"] = item["question"]
             paper_ids = item["paper_ids"]
             # 随机从中取十篇
-            ret_ids = random.sample(paper_ids, min(10, len(paper_ids)))
+            ret_ids = random.sample(paper_ids, min(7, len(paper_ids)))
             ret_item["paper_infos"] = list(Paper.objects.filter(paper_id__in=ret_ids).values())
             data.append(ret_item)
     # 返回推荐问题以及对应的论文lis
