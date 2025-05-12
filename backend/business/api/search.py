@@ -736,7 +736,7 @@ def process_keyword(keyword):
 
 def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=False,authors="",startTime=None,endTime=None,tags=None):
     vector_filtered_papers = get_filtered_paper(
-        search_content, k=100, threshold=0.3,authors=authors,startTime=startTime,endTime=endTime,tags=tags
+        search_content, k=10, threshold=0.3,authors=authors,startTime=startTime,endTime=endTime,tags=tags
     )  # 这是新版的调用服务器模型的接口
     print(f'vector len:{len(vector_filtered_papers)}')
     # 进行二次关键词检索
@@ -770,8 +770,8 @@ def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=Fal
     keyword_filtered_papers = search_papers_by_keywords(keywords=keywords,authors=authors,startTime=startTime,endTime=endTime,tags=tags)
     if not setting_cache: # 非个性化搜索时更新搜索词统计
         update_wordcnt(keywords)
-    if len(keyword_filtered_papers) > 20:
-        keyword_filtered_papers = keyword_filtered_papers[:20]
+    if len(keyword_filtered_papers) > 5:
+        keyword_filtered_papers = keyword_filtered_papers[:5]
 
     s1 = set(vector_filtered_papers)
     s2 = set(keyword_filtered_papers)
