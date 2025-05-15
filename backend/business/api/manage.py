@@ -469,7 +469,7 @@ def paper_statistic(request):
         # 论文总数、领域个数
         return reply.success(
             data={
-                "paper_cnt": Paper.objects.count() + 758,  # 758是为了补齐数据
+                "paper_cnt": Paper.objects.count(),
                 "subclass_cnt": Subclass.objects.count(),
             },
             msg="论文数据获取成功",
@@ -489,8 +489,8 @@ def paper_statistic(request):
         data = {"years": [year.strftime("%Y") for year in years], "data": []}
         for item in years_data:
             data["data"].append(item["total"])
-        for i in range(len(years_data), 5):
-            data["data"].append(758)
+        # for i in range(len(years_data), 5):
+        #     data["data"].append(758)
 
         return reply.success(data=data, msg="年份数据获取成功")
 

@@ -30,6 +30,7 @@ from business.api.paper_interpret import (
     get_paper_study,
     do_paper_study,
     get_paper_url,
+    check_all_pdfs,
 )
 from business.api.auth import (
     login,
@@ -165,6 +166,7 @@ urlpatterns = [
     # path("api/study/createPaperStudy", create_paper_study),
     # path("api/study/restorePaperStudy", restore_paper_study),
     path("api/study/getPaperStudy", get_paper_study),
+    path('api/checkPDFs',check_all_pdfs),
     path("api/study/doPaperStudy", do_paper_study),
     path("api/study/getPaperPDF", get_paper_url),
     path("api/study/reDoPaperStudy", re_do_paper_study),

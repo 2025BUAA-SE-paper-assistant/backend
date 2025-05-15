@@ -500,6 +500,15 @@ def get_paper_url(request):
         }
     return reply.success(response, msg="success")
 
+@require_http_methods(['POST'])
+def check_all_pdfs(request):
+    downed_papers = Paper.objects.filter(local_path__isnull=False)
+    paper_not_well = []
+    for paper in downed_papers:
+        if get_paper_local_url(paper) is None:
+            paper_not_well.append({'id':paper.id,'title':paper.title})
+    return reply.success(data={'bad_papers':paper_not_well})
+
 
 def do_file_chat(conversation_history, query, tmp_kb_id):
     # 将历史记录与本次对话发送给服务器, 获取对话结果
