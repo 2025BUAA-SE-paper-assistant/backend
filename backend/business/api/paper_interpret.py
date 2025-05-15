@@ -402,27 +402,77 @@ async def async_test(request):
     print("Task completed.")
 
 
+from PyPDF2 import PdfReader
+def is_pdf_corrupted(file_path):
+    try:
+        with open(file_path, 'rb') as f:
+            reader = PdfReader(f)
+            # 如果能够成功读取页面数量而不抛出异常，则文件可能正常
+            num_pages = len(reader.pages)
+            return False  # 文件正常
+    except Exception as e:
+        # 打印异常信息（可选）
+        print(f"文件 {file_path} 可能损坏，错误：{e}")
+        return True  # 文件损坏
+
+
 """
     获取本地url
 """
 
 
 def get_paper_local_url(paper):
-    local_path = paper.local_path
-    if not local_path:
-        original_url = paper.original_url
-        # 将路径中的abs修改为pdf
-        original_url = original_url.replace("abs", "pdf")
-        # 访问url，下载文献到服务器
-        filename = str(paper.paper_id)
-        local_path = downloadPaper(original_url, filename)
-        if local_path is None:
-            return None
-        paper.refresh_from_db()
-        paper.local_path = local_path
-        paper.save()
-    return local_path
+    local_pdf = paper.local_path
+    max_retries = 3
+    retries = 0
+    # if not local_path:
+    #     original_url = paper.original_url
+    #     # 将路径中的abs修改为pdf
+    #     original_url = original_url.replace("abs", "pdf")
+    #     # 访问url，下载文献到服务器
+    #     filename = str(paper.paper_id)
+        # local_path = downloadPaper(original_url, filename)
+    #     if local_path is None:
+    #         return None
+    #     paper.refresh_from_db()
+    #     paper.local_path = local_path
+    #     paper.save()
+    # return local_path
+    while retries < max_retries:
+        if local_pdf and os.path.exists(local_pdf):
+            # 检查 PDF 文件是否损坏
+            if is_pdf_corrupted(local_pdf):
+                os.remove(local_pdf)  # 删除损坏的文件
+                local_pdf = None
+            else:
+                return local_pdf  # 文件正常，返回路径
 
+        # 如果文件不存在或者损坏，尝试重新下载
+        if not local_pdf:
+            original_url = paper.original_url.replace("abs", "pdf")  # 将 URL 中的 "abs" 替换为 "pdf"
+            try:
+                filename = str(paper.paper_id)
+                # 保存到服务器本地路径（假设你有一个存储目录，例如 'pdfs/'）
+                try:
+                    local_path = downloadPaper(original_url, filename)
+                except Exception as e:
+                    print(f"下载失败，错误：{e}")
+                    retries += 1
+                    continue
+
+                # 更新数据库中的 local_path 字段
+                paper.local_path = local_path
+                paper.save()
+
+                # 再次检查下载的文件是否损坏
+                if not is_pdf_corrupted(local_path):
+                    return local_path  # 文件正常，返回路径
+            except Exception as e:
+                print(f"处理 PDF 文件时发生错误：{e}")
+                retries += 1
+        else:
+            retries += 1
+    return None  # 如果多次重试都失败，返回 None
 
 """
     获取文献本地url, 无则下载
