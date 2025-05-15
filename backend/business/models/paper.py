@@ -83,6 +83,8 @@ class Paper(models.Model):
             'sub_classes': list(self.sub_classes.values_list('name', flat=True)),
             'paragraph': self.paragraph,
         }
+    def like_count(self):
+        return self.liked_by_users.count()
 
     def __eq__(self, other):
         return self.paper_id == other.paper_id if isinstance(other, Paper) else False
