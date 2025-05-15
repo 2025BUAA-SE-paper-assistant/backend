@@ -10,6 +10,8 @@ import fitz  # 确保导入 PyMuPDF
 if not os.path.exists(PAPERS_PATH):
     os.makedirs(PAPERS_PATH)
 
+import logging
+logger = logging.getLogger('business')
 
 def downloadPaper(url, filename):
     """
@@ -23,7 +25,7 @@ def downloadPaper(url, filename):
     command = f"wget {url} -O {path} "
     result = os.system(command)
     if result == 0:
-        logging.info(f"下载成功: {url}")
+        logger.info(f"下载成功: {url}")
         doc = fitz.open(
             path
         )
@@ -44,5 +46,5 @@ def downloadPaper(url, filename):
 
         return path
     else:
-        logging.error('下载失败')
+        logger.error('下载失败')
         return None
