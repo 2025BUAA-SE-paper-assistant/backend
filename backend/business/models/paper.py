@@ -74,8 +74,8 @@ class Paper(models.Model):
             'citation_count': self.citation_count,
             'original_url': self.original_url,
             'read_count': self.read_count,
-            'like_count': self.like_count,
-            'collect_count': self.collect_count,
+            'like_count': self.like_count(),
+            'collect_count': self.collect_count(),
             'comment_count': self.comment_count,
             'download_count': self.download_count,
             'score': self.score,
@@ -85,6 +85,8 @@ class Paper(models.Model):
         }
     def like_count(self):
         return self.liked_by_users.count()
+    def collect_count(self):
+        return self.collected_by_users.count()
 
     def __eq__(self, other):
         return self.paper_id == other.paper_id if isinstance(other, Paper) else False

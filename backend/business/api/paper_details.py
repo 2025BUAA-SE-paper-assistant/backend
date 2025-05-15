@@ -124,14 +124,14 @@ def collect_paper(request):
         # 取消收藏
         if collected:
             user.collected_papers.remove(paper)
-            paper.collect_count -= 1
+            # paper.collect_count() -= 1
             user.save()
             paper.save()
             return JsonResponse({"message": "取消收藏成功", "is_success": True})
         # 收藏
         if user and paper:
             user.collected_papers.add(paper)
-            paper.collect_count += 1
+            # paper.collect_count += 1
             user.save()
             paper.save()
             return JsonResponse({"message": "收藏成功", "is_success": True})
@@ -489,7 +489,7 @@ def get_paper_info(request):
                 "citation_count": paper.citation_count,
                 "read_count": paper.read_count,
                 "like_count": paper.like_count(),
-                "collect_count": paper.collect_count,
+                "collect_count": paper.collect_count(),
                 "download_count": paper.download_count,
                 "comment_count": paper.comment_count,
                 "score": paper.score,

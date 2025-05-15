@@ -77,7 +77,7 @@ def collected_papers_list(request):
             "citation_count": paper.citation_count,
             "read_count": paper.read_count,
             "like_count": paper.like_count(),
-            "collect_count": paper.collect_count,
+            "collect_count": paper.collect_count(),
             "download_count": paper.download_count,
             "score": paper.score
         })
@@ -106,7 +106,7 @@ def delete_collected_papers(request):
     print(len(papers_to_remove))
     # 逐论文处理
     for paper in papers_to_remove:
-        paper.collect_count -= 1
+        # paper.collect_count -= 1
         user.collected_papers.remove(paper)
         user.save()
         paper.save()
