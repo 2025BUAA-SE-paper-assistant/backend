@@ -49,14 +49,14 @@ def like_paper(request):
         # 取消点赞
         if liked:
             user.liked_papers.remove(paper)
-            paper.like_count -= 1
+            # paper.like_count -= 1
             user.save()
             paper.save()
             return JsonResponse({"message": "取消点赞成功", "is_success": True})
         # 点赞
         if user and paper:
             user.liked_papers.add(paper)
-            paper.like_count += 1
+            # paper.like_count += 1
             user.save()
             paper.save()
 
@@ -254,7 +254,7 @@ def get_first_comment(request):
                     "comment_id": comment.comment_id,
                     "date": comment.date.strftime("%Y-%m-%d %H:%M:%S"),
                     "text": comment.text,
-                    "like_count": comment.like_count,
+                    "like_count": comment.like_count(),
                     "username": comment.user_id.username,
                     "user_image": comment.user_id.avatar.url,
                     "user_liked": comment.liked_by_users.filter(username=user).first()
@@ -303,7 +303,7 @@ def get_second_comment(request):
                     "comment_id": comment.comment_id,
                     "date": comment.date.strftime("%Y-%m-%d %H:%M:%S"),
                     "text": comment.text,
-                    "like_count": comment.like_count,
+                    "like_count": comment.like_count(),
                     "to_username": (
                         comment.reply_comment.user_id.username
                         if comment.reply_comment
@@ -343,13 +343,13 @@ def like_comment(request):
             update_user_activity(user.user_id, type='like')
             # 取消点赞
             if liked:
-                comment.like_count -= 1
+                # comment.like_count -= 1
                 comment.liked_by_users.remove(user)
                 comment.save()
                 return JsonResponse({"message": "取消点赞成功", "is_success": True})
             # 点赞
             else:
-                comment.like_count += 1
+                # comment.like_count += 1
                 comment.liked_by_users.add(user)
                 comment.save()
                 # 被点赞的评论的作者收到通知
@@ -488,7 +488,7 @@ def get_paper_info(request):
                 "journal": paper.journal,
                 "citation_count": paper.citation_count,
                 "read_count": paper.read_count,
-                "like_count": paper.like_count,
+                "like_count": paper.like_count(),
                 "collect_count": paper.collect_count,
                 "download_count": paper.download_count,
                 "comment_count": paper.comment_count,

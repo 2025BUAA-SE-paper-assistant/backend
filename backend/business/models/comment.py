@@ -28,6 +28,10 @@ class FirstLevelComment(models.Model):
     like_count = models.IntegerField(default=0)
     liked_by_users = models.ManyToManyField(User, related_name='liked_first_level_comments', blank=True)
     visibility = models.BooleanField(default=True)
+    def like_count(self):
+        return self.liked_by_users.count()
+    # def is_liked(self, user):
+    #     return self.liked_by_users.filter(user_id=user.user_id).exists()
 
 
 class SecondLevelComment(models.Model):
@@ -54,3 +58,7 @@ class SecondLevelComment(models.Model):
     reply_comment = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True)
     liked_by_users = models.ManyToManyField(User, related_name='liked_second_level_comments', blank=True)
     visibility = models.BooleanField(default=True)
+    def like_count(self):
+        return self.liked_by_users.count()
+    # def is_liked(self, user):
+    #     return self.liked_by_users.filter(user_id=user.user_id).exists()
