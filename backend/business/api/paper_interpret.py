@@ -500,13 +500,15 @@ def get_paper_url(request):
         }
     return reply.success(response, msg="success")
 
+from django.db.models import Q
+from tqdm import tqdm
 @require_http_methods(['POST'])
 def check_all_pdfs(request):
-    downed_papers = Paper.objects.filter(local_path__isnull=False)
+    downloaded_papers = Paper.objects.filter(Q(local_path__isnull=False)|Q(local_path=''))
     paper_not_well = []
-    for paper in downed_papers:
+    for paper in tqdm(downloaded_papers):
         if get_paper_local_url(paper) is None:
-            paper_not_well.append({'id':paper.id,'title':paper.title})
+            paper_not_well.append({'id':paper.paper_id,'title':paper.title})
     return reply.success(data={'bad_papers':paper_not_well})
 
 
