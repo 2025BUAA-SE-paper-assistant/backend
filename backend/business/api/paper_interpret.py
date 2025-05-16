@@ -402,14 +402,18 @@ async def async_test(request):
     print("Task completed.")
 
 
-from PyPDF2 import PdfReader
+# from PyPDF2 import PdfReader
+import fitz
 def is_pdf_corrupted(file_path):
     try:
-        with open(file_path, 'rb') as f:
-            reader = PdfReader(f)
+        doc = fitz.open(file_path)
+        if len(doc) <= 0:
+            return True
+        # with open(file_path, 'rb') as f:
+        #     reader = PdfReader(f)
             # 如果能够成功读取页面数量而不抛出异常，则文件可能正常
-            num_pages = len(reader.pages)
-            return False  # 文件正常
+            # num_pages = len(reader.pages)
+        return False  # 文件正常
     except Exception as e:
         # 打印异常信息（可选）
         print(f"文件 {file_path} 可能损坏，错误：{e}")
