@@ -523,7 +523,7 @@ from django.db.models import Q
 from tqdm import tqdm
 @require_http_methods(['POST'])
 def check_all_pdfs(request):
-    downloaded_papers = Paper.objects.filter(Q(local_path__isnull=False)|Q(local_path=''))
+    downloaded_papers = Paper.objects.filter(Q(local_path__isnull=False)|Q(local_path!=''))
     paper_not_well = []
     for paper in tqdm(downloaded_papers):
         if get_paper_local_url(paper) is None:
