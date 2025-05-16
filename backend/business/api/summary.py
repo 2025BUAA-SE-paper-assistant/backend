@@ -203,7 +203,7 @@ def generate_summary(request):
 
 import os
 import requests
-from business.utils.download_paper import downloadPaper
+# from business.utils.download_paper import downloadPaper
 
 
 def create_tmp_knowledge_base(dir: str) -> str:
@@ -272,6 +272,7 @@ def ask_ai_single_paper(payload):
                         origin_docs.append(doc)
     return ai_reply, origin_docs
 
+from business.api.paper_interpret import get_paper_local_url
 from business.utils.activity import update_user_activity
 def create_abstract_report(request):
     request_data = json.loads(request.body)
@@ -292,13 +293,14 @@ def create_abstract_report(request):
         title = document.title
     elif paper_id:
         p = Paper.objects.filter(paper_id=paper_id).first()
-        pdf_url = p.original_url.replace("abs/", "pdf/") + ".pdf"
-        local_path = settings.PAPERS_URL + '/' + str(p.paper_id) + ".pdf"
-        print(local_path)
-        print(pdf_url)
-        if not os.path.exists(local_path):
-            # 下载下来
-            downloadPaper(url=pdf_url, filename=str(p.paper_id))
+        local_path = get_paper_local_url(p)
+        # pdf_url = p.original_url.replace("abs/", "pdf/") + ".pdf"
+        # local_path = settings.PAPERS_URL + '/' + str(p.paper_id) + ".pdf"
+        # print(local_path)
+        # print(pdf_url)
+        # if not os.path.exists(local_path):
+        #     # 下载下来
+        #     downloadPaper(url=pdf_url, filename=str(p.paper_id))
         content_type = ".pdf"
         title = str(p.paper_id)
     print("下载完毕")
