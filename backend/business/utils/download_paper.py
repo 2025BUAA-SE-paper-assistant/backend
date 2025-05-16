@@ -13,6 +13,8 @@ if not os.path.exists(PAPERS_PATH):
 import logging
 logger = logging.getLogger('business')
 
+
+
 def downloadPaper(url, filename):
     """
     下载文献到服务器
@@ -25,10 +27,10 @@ def downloadPaper(url, filename):
     command = f"wget {url} -O {path} "
     result = os.system(command)
     if result == 0:
-        logger.info(f"下载成功: {url}")
         doc = fitz.open(
             path
         )
+        logger.info(f"下载成功: {url}")
         paper = Paper.objects.get(paper_id = filename)
         paragrahs = []
         for page_num in range(doc.page_count):

@@ -402,19 +402,38 @@ async def async_test(request):
     print("Task completed.")
 
 
-from PyPDF2 import PdfReader
-def is_pdf_corrupted(file_path):
+# from PyPDF2 import PdfReader
+import fitz
+def is_pdf_corrupted(file_path,paper):
     try:
-        with open(file_path, 'rb') as f:
-            reader = PdfReader(f)
+        doc = fitz.open(file_path)
+        if len(doc) <= 0:
+            return True
+        # with open(file_path, 'rb') as f:
+        #     reader = PdfReader(f)
             # 如果能够成功读取页面数量而不抛出异常，则文件可能正常
-            num_pages = len(reader.pages)
-            return False  # 文件正常
+            # num_pages = len(reader.pages)
+        
+        # 未解析段落分块
+        if not paper.paragraph:
+            paragrahs = []
+            for page_num in range(doc.page_count):
+                page = doc[page_num]
+                blocks = page.get_text("blocks")
+                for i, block in enumerate(blocks):
+                    block_list = list(block)
+                    paragraph_with_page = {
+                        "page_num": page_num,
+                        "block": block_list
+                    }
+                    paragrahs.append(json.dumps(paragraph_with_page))
+            paper.paragraph = json.dumps(paragrahs)
+            paper.save()
+        return False  # 文件正常
     except Exception as e:
         # 打印异常信息（可选）
         print(f"文件 {file_path} 可能损坏，错误：{e}")
         return True  # 文件损坏
-
 
 """
     获取本地url
@@ -441,7 +460,7 @@ def get_paper_local_url(paper):
     while retries < max_retries:
         if local_pdf and os.path.exists(local_pdf):
             # 检查 PDF 文件是否损坏
-            if is_pdf_corrupted(local_pdf):
+            if is_pdf_corrupted(local_pdf,paper):
                 os.remove(local_pdf)  # 删除损坏的文件
                 local_pdf = None
             else:
@@ -465,7 +484,7 @@ def get_paper_local_url(paper):
                 paper.save()
 
                 # 再次检查下载的文件是否损坏
-                if not is_pdf_corrupted(local_path):
+                if not is_pdf_corrupted(local_path,paper):
                     return local_path  # 文件正常，返回路径
             except Exception as e:
                 print(f"处理 PDF 文件时发生错误：{e}")
@@ -500,13 +519,15 @@ def get_paper_url(request):
         }
     return reply.success(response, msg="success")
 
+from django.db.models import Q
+from tqdm import tqdm
 @require_http_methods(['POST'])
 def check_all_pdfs(request):
-    downed_papers = Paper.objects.filter(local_path__isnull=False)
+    downloaded_papers = Paper.objects.filter(Q(local_path__isnull=False)|Q(local_path!=''))
     paper_not_well = []
-    for paper in downed_papers:
+    for paper in tqdm(downloaded_papers):
         if get_paper_local_url(paper) is None:
-            paper_not_well.append({'id':paper.id,'title':paper.title})
+            paper_not_well.append({'id':paper.paper_id,'title':paper.title})
     return reply.success(data={'bad_papers':paper_not_well})
 
 
