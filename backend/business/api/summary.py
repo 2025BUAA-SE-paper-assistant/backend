@@ -11,7 +11,7 @@ from business.utils.reply import fail, success
 from django.conf import settings
 from business.models import User, UserDocument, Paper, abstract_report, SummaryReport
 from django.views.decorators.http import require_http_methods
-import os
+import os,re
 
 
 ##################################新建一个临时知识库，多问几次，然后通过一个模板生成综述#######################################
@@ -73,6 +73,42 @@ def get_summary(paper_ids, report_id):
         paper_conclusions = []
         paper_themes = []
         paper_situations = []
+        ######生成标题########
+        i = 1
+        articles = ""
+        for id in paper_ids:
+            p = Paper.objects.filter(paper_id=id).first()
+            articles += f"Title_{i}: {p.title}\nAbstrastract_{i}: {p.abstract}"
+            i = i + 1
+        base_url = "http://10.2.16.28:2334/chat" #ai URL
+        headers = {
+            'Content-Type': 'application/json'
+        }
+        data = {
+            "query": f"{articles}", # 原文
+            "temperature": 0.3, # temp
+            "stream": False, 
+            "model_name": "chatglm3-6b", # 模型
+            "prompt_name": "literature_reviewer_plus", # prompt类型
+        }
+
+        payload = json.dumps(data)
+
+        response = requests.post(f"{base_url}/chat", data=payload, headers=headers, stream=False)
+        ans = ""
+        for line in response.iter_lines():
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+            if decoded_line.startswith('data'):
+                data = json.loads(decoded_line.replace('data: ', ''))
+                ans += data['text']
+
+        pattern = r"标题：(.+?)(?:\r?\n|$)"
+
+        titles = re.findall(pattern, ans) #生成综述标题
+        title = titles[0]
+            
         for id in paper_ids:
             p = Paper.objects.filter(paper_id=id).first()
             content_prompt = (
@@ -111,7 +147,7 @@ def get_summary(paper_ids, report_id):
         conclusion = queryGLM(conclusion_prompt, [])
 
         # 生成综述
-        summary = "# 引言\n" + introduction + "\n"
+        summary = f"# {title}\n" + introduction + "\n"
         summary += "# 正文\n"
         for i in range(len(paper_ids)):
             summary += "## " + paper_themes[i] + "\n"
