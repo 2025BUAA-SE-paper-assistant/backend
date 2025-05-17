@@ -112,17 +112,18 @@ def get_summary(paper_ids, report_id):
         for id in paper_ids:
             p = Paper.objects.filter(paper_id=id).first()
             content_prompt = (
-                "将这篇论文的摘要以第三人称的方式复述一遍，摘要如下：\n" + p.abstract
+                "将这篇论文的摘要以第三人称的方式复述一遍，摘要如下：\n" + p.abstract_cn
             )
             paper_content.append(queryGLM(content_prompt, []))
             content_prompt = "将这篇论文的题目转化为中文：\n" + p.title
             paper_themes.append(queryGLM(content_prompt, []))
+            # paper_themes.append(p.title_cn)
             content_prompt = (
-                "将这篇论文的现状部分以第三人称的方式复述一遍：\n" + p.abstract
+                "将这篇论文的现状部分以第三人称的方式复述一遍：\n" + p.abstract_cn
             )
             paper_situations.append(queryGLM(content_prompt, []))
             content_prompt = (
-                "将这篇论文的结论和展望部分以第三人称的方式复述一遍：\n" + p.abstract
+                "将这篇论文的结论和展望部分以第三人称的方式复述一遍：\n" + p.abstract_cn
             )
             paper_conclusions.append(queryGLM(content_prompt, []))
         # 生成引言
@@ -146,13 +147,88 @@ def get_summary(paper_ids, report_id):
             )
         conclusion = queryGLM(conclusion_prompt, [])
 
+        print("结论生成完毕")
+        print("关键技术分析开始")
+        
+        ###关键技术与创新点
+        data = {
+            "query": f"{articles}", # 原文
+            "temperature": 0.2, # temp
+            "stream": False, 
+            "model_name": "chatglm3-6b", # 模型
+            "max_tokens": 4096,
+            "prompt_name": "tech_innovation_analyzer", # prompt类型
+        }
+
+        payload = json.dumps(data)
+
+        response = requests.post(f"{base_url}/chat", data=payload, headers=headers, stream=False)
+        ans = ""
+        # 捕获输出
+        for line in response.iter_lines():
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+            if decoded_line.startswith('data'):
+                data = json.loads(decoded_line.replace('data: ', ''))
+                ans += data['text']
+
+        lines = ans.splitlines()
+        innovation = ""
+        for idx, line in enumerate(lines):
+            if line.strip() == '关键技术和创新突破':
+                # 从匹配行开始，拼接后续所有行
+                innovation = '\n'.join(lines[idx:]).strip() 
+        print("关键技术分析开始结束", ans)
+        
+        #####局限性分析
+        print("局限性分析开始")
+        data = {
+            "query": f"{articles}", # 原文
+            "temperature": 0.3, # temp
+            "stream": False, 
+            "model_name": "chatglm3-6b", # 模型
+            "max_tokens": 4096,
+            "prompt_name": "performance_analyzer", # prompt类型
+        }
+
+        payload = json.dumps(data)
+
+        response = requests.post(f"{base_url}/chat", data=payload, headers=headers, stream=False)
+        ans = ""
+        # 捕获输出
+        for line in response.iter_lines():
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+            if decoded_line.startswith('data'):
+                data = json.loads(decoded_line.replace('data: ', ''))
+                ans += data['text']
+                
+        print("局限性分析结束", ans)
+        lines = ans.splitlines()
+        limit = ""
+        for idx, line in enumerate(lines):
+            if line.strip() == '性能表现与领域局限':
+                # 从匹配行开始，拼接后续所有行
+                limit = '\n'.join(lines[idx:]).strip()
+
+        # limit = "## " + limit     
+                
+                 
         # 生成综述
         summary = f"# {title}\n" + introduction + "\n"
         summary += "# 正文\n"
         for i in range(len(paper_ids)):
             summary += "## " + paper_themes[i] + "\n"
             summary += paper_content[i] + "\n"
-        summary += "# 结论\n" + conclusion + "\n"
+        if innovation != "" :
+            innovation = "## " + innovation
+            summary += innovation
+        if limit != "" :
+            limit = "## " + limit
+            summary += limit
+        summary += "\n# 结论\n" + conclusion + "\n"
         # 修改语病，更加通顺
         response = summary
         os.makedirs(os.path.dirname(settings.USER_REPORTS_PATH), exist_ok=True)
