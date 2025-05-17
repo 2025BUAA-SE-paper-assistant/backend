@@ -53,6 +53,8 @@ from business.api.paper_details import (
     like_comment,
     get_user_paper_info,
     refrech_abstract_cn,
+    check_all_bibtex,
+    check_all_title_cn,
 )
 from business.api.upload_document import (
     upload_paper,
@@ -111,6 +113,10 @@ urlpatterns = [
     path("api/getComment2", get_second_comment),
     path("api/likeComment", like_comment),
     path("api/getUserPaperInfo", get_user_paper_info),
+    path('api/checkTitleCN', check_all_title_cn),
+    path('api/checkBibtex', check_all_bibtex),
+
+
     # 用户上传论文模块
     path("api/uploadPaper", upload_paper),
     path("api/removeUploadedPaper", remove_uploaded_paper),

@@ -31,6 +31,7 @@ class Paper(models.Model):
     """
     paper_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False, unique=True)
     title = models.CharField(max_length=255)
+    title_cn = models.TextField(null=True)  # 中文摘要，允许为空
     authors = models.CharField(max_length=255)  # 多个作者','分隔
     abstract = models.TextField()
     abstract_cn = models.TextField(null=True)  # 中文摘要，允许为空
@@ -48,6 +49,7 @@ class Paper(models.Model):
     local_path = models.CharField(max_length=255)  # 本地地址，允许为空
     sub_classes = models.ManyToManyField(Subclass, related_name='papers')
     paragraph = models.TextField(null=True)  # 段落信息，允许为空
+    bibtex = models.TextField(null=True)  # bibtex信息，允许为空
 
     def __str__(self):
         return self.title
@@ -65,6 +67,7 @@ class Paper(models.Model):
         return {
             'paper_id': self.paper_id,
             'title': self.title,
+            'title_cn':self.title_cn,
             'authors': self.authors,
             'abstract': self.abstract,
             # 'abstract_cn': self.abstract_cn if self.abstract_cn else DeepSeek().translate_text(self.abstract),
@@ -82,6 +85,7 @@ class Paper(models.Model):
             'score_count': self.score_count,
             'sub_classes': list(self.sub_classes.values_list('name', flat=True)),
             'paragraph': self.paragraph,
+            'bibtex':self.bibtex,
         }
     def like_count(self):
         return self.liked_by_users.count()
