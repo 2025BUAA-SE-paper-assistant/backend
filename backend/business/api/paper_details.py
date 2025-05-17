@@ -474,14 +474,22 @@ def get_paper_info(request):
                 abstract_cn = translate(paper.abstract)
                 paper.abstract_cn = abstract_cn
                 paper.save()
-            bibtex = paper.original_url.replace("abs", "bibtex")
-            response = requests.get(bibtex, timeout=10)
-            if response.status_code == 200:
-                bibtex = response.text.strip()
+            if not paper.title_cn:
+                title_cn = translate(paper.title)
+                paper.title_cn = title_cn
+                paper.save()
+            if not paper.bibtex:
+                bibtex = paper.original_url.replace("abs", "bibtex")
+                response = requests.get(bibtex, timeout=10)
+                if response.status_code == 200:
+                    bibtex = response.text.strip()
+                paper.bibtex = bibtex
+                paper.save()
             response = {
                 "message": "获取成功",
                 "paper_id": paper.paper_id,
                 "title": paper.title,
+                'title_cn':paper.title_cn,
                 "authors": paper.authors,
                 "abstract": paper.abstract,
                 "abstract_cn": paper.abstract_cn,
@@ -496,7 +504,7 @@ def get_paper_info(request):
                 "score": paper.score,
                 "score_count": paper.score_count,
                 "original_url": paper.original_url,
-                "bibtex": bibtex,
+                "bibtex": paper.bibtex,
                 "is_success": True,
                 "paragraph": paper.paragraph,
             }
@@ -537,3 +545,54 @@ def get_user_paper_info(request):
             )
     else:
         return JsonResponse({"error": "请求方法错误", "is_success": False}, status=400)
+
+from django.views.decorators.http import require_http_methods
+
+@require_http_methods(["POST"])
+def check_all_title_cn(request):
+    papers = Paper.objects.all()
+    bad_papers = []
+    max_retries = 3
+    for paper in tqdm.tqdm(papers):
+        if not paper.title_cn:
+            attempt = 1
+            while attempt <= max_retries:
+                try:
+                    title_cn = translate(paper.title)
+                    paper.title_cn = title_cn
+                    paper.save()
+                    break
+                except Exception as e:
+                    attempt += 1
+                    if attempt > max_retries:
+                        print(f"Failed to translate {paper.title}")
+                        bad_papers.append(paper.title)
+    return JsonResponse({"bad_papers": bad_papers},status=200)
+
+@require_http_methods(['POST'])
+def check_all_bibtex(request):
+    papers = Paper.objects.all()
+    max_retries = 3
+    bad_papers = []
+    for paper in tqdm.tqdm(papers):
+        if not paper.bibtex:
+            attempt = 1
+            while attempt <= max_retries:
+                try:
+                    bibtex = paper.original_url.replace('abs','bibtex')
+                    response = requests.get(bibtex, timeout=10)
+                    if response.status_code == 200:
+                        bibtex = response.text.strip()
+                    else:
+                        raise Exception('Failed to get bibtex')
+                    paper.bibtex = bibtex
+                    paper.save()
+                    break
+                except Exception as e:
+                    attempt += 1
+                    if attempt > max_retries:
+                        print(f"Failed to get bibtex {paper.title}")
+                        bad_papers.append(paper.title)
+    return JsonResponse({"bad_papers": bad_papers},status=200)
+
+
