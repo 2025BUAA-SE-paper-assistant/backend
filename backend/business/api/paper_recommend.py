@@ -161,6 +161,7 @@ def refreshCache():
     start_date = (last_month).strftime("%Y-%m-%d")
     end_date = (today).strftime("%Y-%m-%d")
     papers = query_arxiv_by_date_and_field(start_date, end_date)
+    print(f'len:{len(papers)}')
     # 从中提取关键词
     keywords = []
     for paper in papers:
@@ -171,6 +172,7 @@ def refreshCache():
             + paper.summary
         )
         keywords.append(queryGLM(msg))
+        print(keywords)
 
     # 从关键词中提取论文
     key = queryGLM(
@@ -185,8 +187,8 @@ def refreshCache():
     for paper in papers:
         from business.models import Paper
 
-        p = Paper.objects.get(paper_id=paper)
-        info.extend(p.to_dict())
+        # p = Paper.objects.get(paper_id=paper)
+        info.extend(paper.to_dict())
     cache.set("recommended_papers", info, timeout=86400)
 
 
