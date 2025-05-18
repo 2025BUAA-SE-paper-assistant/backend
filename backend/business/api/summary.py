@@ -63,6 +63,22 @@ def queryGLM(msg: str, history=None) -> str:
         print(f"RequestException: {e}")
         return f"错误: {e}"
 
+from weasyprint import HTML
+import markdown
+from jinja2 import Template
+
+def markdown_to_pdf(input_md, output_pdf):
+    with open(input_md, 'r', encoding='utf-8') as f:
+        md_text = f.read()
+
+    html_content = markdown.markdown(md_text, extensions=['extra','tables', 'sane_lists'])
+    template_path = settings.USER_REPORTS_PATH + "/template.html"
+    with open(template_path, 'r', encoding='utf-8') as t:
+        template = Template(t.read())
+    full_html = template.render(content=html_content)
+
+
+    HTML(string=full_html).write_pdf(output_pdf)
 
 def get_summary(paper_ids, report_id, user):
     print("report_id:", report_id)
@@ -180,6 +196,7 @@ def get_summary(paper_ids, report_id, user):
         innovation = ""
         for idx, line in enumerate(lines):
             if line.strip() == '关键技术和创新突破':
+                innovation += '\n'
                 # 从匹配行开始，拼接后续所有行
                 innovation = '\n'.join(lines[idx:]).strip() 
         print("关键技术分析开始结束", ans)
@@ -221,7 +238,7 @@ def get_summary(paper_ids, report_id, user):
                  
         # 生成综述
         summary = f"# {title}\n" + introduction + "\n"
-        summary += "# 正文\n"
+        summary += "# 各论文内容简述\n"
         for i in range(len(paper_ids)):
             summary += "## " + paper_themes[i] + "\n"
             summary += paper_content[i] + "\n"
@@ -236,9 +253,11 @@ def get_summary(paper_ids, report_id, user):
         response = summary
         os.makedirs(os.path.dirname(settings.USER_REPORTS_PATH), exist_ok=True)
         md_path = settings.USER_REPORTS_PATH + "/" + str(report.report_id) + ".md"
+        pdf_path = settings.USER_REPORTS_PATH + "/" + str(report.report_id) + ".pdf"
         with open(md_path, "w", encoding="utf-8") as f:
             f.write(response)
-        report.report_path = md_path
+        markdown_to_pdf(md_path, pdf_path)
+        report.report_path = pdf_path
         report.status = SummaryReport.STATUS_COMPLETED
         report.save()
         notification = Notification(user_id = user,title='综述报告生成成功！',content=ret_content)
