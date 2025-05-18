@@ -5,7 +5,7 @@ path : /api/summary/...
 
 from django.http import JsonResponse, HttpRequest
 import openai, json
-from business.models import User, paper
+from business.models import User, paper, Notification
 import threading, requests
 from business.utils.reply import fail, success
 from django.conf import settings
@@ -64,7 +64,7 @@ def queryGLM(msg: str, history=None) -> str:
         return f"错误: {e}"
 
 
-def get_summary(paper_ids, report_id):
+def get_summary(paper_ids, report_id, user):
     print("report_id:", report_id)
     report = SummaryReport.objects.get(report_id=report_id)
     report.status = SummaryReport.STATUS_IN_PROGRESS
@@ -73,13 +73,16 @@ def get_summary(paper_ids, report_id):
         paper_conclusions = []
         paper_themes = []
         paper_situations = []
+        ret_content = "你关于论文"
         ######生成标题########
         i = 1
         articles = ""
         for id in paper_ids:
             p = Paper.objects.filter(paper_id=id).first()
             articles += f"Title_{i}: {p.title}\nAbstrastract_{i}: {p.abstract}"
+            ret_content += f"《{p.title}》、"
             i = i + 1
+        ret_content = ret_content[:-2] + "的综述报告生成完毕了！请前往“个人中心->综述报告”查看！"
         base_url = "http://10.2.16.28:2334/chat" #ai URL
         headers = {
             'Content-Type': 'application/json'
@@ -238,6 +241,8 @@ def get_summary(paper_ids, report_id):
         report.report_path = md_path
         report.status = SummaryReport.STATUS_COMPLETED
         report.save()
+        notification = Notification(user_id = user,title='综述报告生成成功！',content=ret_content)
+        notification.save()
         # os.remove(md_path)
         # print(response)
     except Exception as e:
@@ -301,7 +306,7 @@ def generate_summary(request):
         if len(paper_ids) > 8:
             return fail(msg="综述生成输入文章数目过多")
         # 先把每篇论文需要的信息生成好了
-        threading.Thread(target=get_summary, args=(paper_ids, report.report_id)).start()
+        threading.Thread(target=get_summary, args=(paper_ids, report.report_id, user)).start()
         return JsonResponse(
             {"message": "综述生成成功", "report_id": report.report_id}, status=200
         )
