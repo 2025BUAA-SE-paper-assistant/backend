@@ -63,6 +63,18 @@ def queryGLM(msg: str, history=None) -> str:
         print(f"RequestException: {e}")
         return f"错误: {e}"
 
+import re
+
+def convert_markdown(md_content):
+    # 去除标题和列表项前的多余空格
+    md_content = re.sub(r'^\s+(#+ .+)$', r'\1', md_content, flags=re.MULTILINE)
+    md_content = re.sub(r'^\s+(\d+\. .+)$', r'\1', md_content, flags=re.MULTILINE)
+    
+    # 在标题后添加空行（确保标题后有空行）
+    md_content = re.sub(r'(#+ .+)\n(?!\n|#)', r'\1\n\n', md_content, flags=re.MULTILINE)
+    
+    # 调整子项缩进（3空格 -> 4空格）
+    md_content = re.sub(r'^   -', r'    -', md_content, flags=re.MULTILINE)
 from weasyprint import HTML
 import markdown
 from jinja2 import Template
@@ -70,6 +82,8 @@ from jinja2 import Template
 def markdown_to_pdf(input_md, output_pdf):
     with open(input_md, 'r', encoding='utf-8') as f:
         md_text = f.read()
+
+    md_text = convert_markdown(md_text)
 
     html_content = markdown.markdown(md_text, extensions=['extra','tables', 'sane_lists'])
     template_path = settings.USER_REPORTS_PATH + "/template.html"
