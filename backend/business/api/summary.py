@@ -323,7 +323,8 @@ def generate_summary(request):
     update_user_activity(user.user_id, type='summarize')
     report = SummaryReport.objects.create(user_id=user, status=SummaryReport.STATUS_PENDING)
     report.title = '综述' + str(report.report_id)
-    p = settings.USER_REPORTS_PATH + '/' + str(report.report_id) + '.md'
+    # p = settings.USER_REPORTS_PATH + '/' + str(report.report_id) + '.md'
+    p = settings.USER_REPORTS_PATH + '/' + str(report.report_id) + '.pdf'
     report.report_path = p
     report.save()
     try:
