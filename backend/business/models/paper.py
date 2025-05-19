@@ -50,6 +50,7 @@ class Paper(models.Model):
     sub_classes = models.ManyToManyField(Subclass, related_name='papers')
     paragraph = models.TextField(null=True)  # 段落信息，允许为空
     bibtex = models.TextField(null=True)  # bibtex信息，允许为空
+    mind_map = models.TextField(null=True)  # 思维导图信息，允许为空
 
     def __str__(self):
         return self.title
@@ -86,6 +87,7 @@ class Paper(models.Model):
             'sub_classes': list(self.sub_classes.values_list('name', flat=True)),
             'paragraph': self.paragraph,
             'bibtex':self.bibtex,
+            'mind_map': self.get_mind_map(),
         }
     def like_count(self):
         return self.liked_by_users.count()
@@ -97,3 +99,13 @@ class Paper(models.Model):
 
     def __hash__(self):
         return hash(self.paper_id)
+
+    def get_mind_map(self):
+        if self.mind_map:
+            return self.mind_map
+        else:
+            # 调用DeepSeek的get_mind_map方法生成思维导图
+            mind_map = DeepSeek().get_mind_map(self.abstract)
+            self.mind_map = mind_map
+            self.save()
+            return mind_map

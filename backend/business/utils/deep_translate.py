@@ -49,6 +49,21 @@ class DeepSeek:
         # print(response["choices"][0]["message"]["content"])
         return response["choices"][0]["message"]["content"]
 
+    def get_mind_map(self, text):
+        #TODO: 讲这里的硬编码改到配置里面
+        response = openai.ChatCompletion.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": self.read_md_file("/usr/zjq/backend/backend/business/utils/mind_map.md")},
+                {"role": "user", "content": json.dumps(text)},
+            ],
+            max_tokens=1024,
+            temperature=0.0,
+            stream=False
+        )
+        # print(response["choices"][0]["message"]["content"])
+        return response["choices"][0]["message"]["content"]
+
 if __name__ == "__main__":
     ds = DeepSeek(api_key="sk-b0996543be5941d9a2bad73b9b12df35")
     # ds.chat("讲一个冷笑话")

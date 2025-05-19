@@ -507,6 +507,7 @@ def get_paper_info(request):
                 "bibtex": paper.bibtex,
                 "is_success": True,
                 "paragraph": paper.paragraph,
+                "mind_map": paper.get_mind_map(),
             }
             return JsonResponse(response, status=200)
         else:
