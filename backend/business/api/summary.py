@@ -75,6 +75,8 @@ def convert_markdown(md_content):
     
     # 调整子项缩进（3空格 -> 4空格）
     md_content = re.sub(r'^   -', r'    -', md_content, flags=re.MULTILINE)
+    return md_content  # Make sure to return the processed content
+
 from weasyprint import HTML
 import markdown
 from jinja2 import Template
@@ -83,10 +85,17 @@ def markdown_to_pdf(input_md, output_pdf):
     with open(input_md, 'r', encoding='utf-8') as f:
         md_text = f.read()
 
+        if not md_text:
+            raise ValueError("Markdown file is empty")
+
     md_text = convert_markdown(md_text)
 
     html_content = markdown.markdown(md_text, extensions=['extra','tables', 'sane_lists'])
-    template_path = settings.USER_REPORTS_PATH + "/template.html"
+    template_path = os.path.join(settings.USER_REPORTS_PATH, "template.html")
+
+    if not os.path.exists(template_path):
+        raise FileNotFoundError(f"Template file not found at {template_path}")
+
     with open(template_path, 'r', encoding='utf-8') as t:
         template = Template(t.read())
     full_html = template.render(content=html_content)
@@ -213,7 +222,8 @@ def get_summary(paper_ids, report_id, user):
                 innovation += '\n'
                 # 从匹配行开始，拼接后续所有行
                 innovation = '\n'.join(lines[idx:]).strip() 
-        print("关键技术分析开始结束", ans)
+        # print("关键技术分析开始结束", ans)
+        print("关键技术分析开始结束")
         
         #####局限性分析
         print("局限性分析开始")
@@ -238,9 +248,10 @@ def get_summary(paper_ids, report_id, user):
             if decoded_line.startswith('data'):
                 data = json.loads(decoded_line.replace('data: ', ''))
                 ans += data['text']
-                
-        print("局限性分析结束", ans)
+        print("局限性分析结束")
+        # print("局限性分析结束", ans)
         lines = ans.splitlines()
+        # lines = [line for line in lines and line != '']
         limit = ""
         for idx, line in enumerate(lines):
             if line.strip() == '性能表现与领域局限':
@@ -279,8 +290,7 @@ def get_summary(paper_ids, report_id, user):
         notification.save()
         # os.remove(md_path)
         # print(response)
-    except Exception as e:
-        print(e)
+    except Exception as e:                     # 发生异常所在的行数
         ret_content = "抱歉！" + ret_content + "的综述报告失败，请重新尝试。" 
         notification = Notification(user_id = user,title='综述报告生成失败！',content=ret_content)
         notification.save()
