@@ -283,6 +283,7 @@ def get_summary(paper_ids, report_id, user):
         print(e)
         ret_content = "抱歉！" + ret_content + "的综述报告失败，请重新尝试。" 
         notification = Notification(user_id = user,title='综述报告生成失败！',content=ret_content)
+        notification.save()
         report.delete()
 
 
