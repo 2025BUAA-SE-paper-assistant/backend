@@ -84,12 +84,12 @@ def get_summary(paper_ids, report_id, user):
     print("report_id:", report_id)
     report = SummaryReport.objects.get(report_id=report_id)
     report.status = SummaryReport.STATUS_IN_PROGRESS
+    ret_content = "你关于论文"
     try:
         paper_content = []  # 每个论文一个标题，然后是内容
         paper_conclusions = []
         paper_themes = []
         paper_situations = []
-        ret_content = "你关于论文"
         ######生成标题########
         i = 1
         articles = ""
@@ -98,7 +98,7 @@ def get_summary(paper_ids, report_id, user):
             articles += f"Title_{i}: {p.title}\nAbstrastract_{i}: {p.abstract}"
             ret_content += f"《{p.title}》、"
             i = i + 1
-        ret_content = ret_content[:-2] + "的综述报告生成完毕了！请前往“个人中心->综述报告”查看！"
+        ret_content = ret_content[:-2]
         base_url = "http://10.2.16.28:2334/chat" #ai URL
         headers = {
             'Content-Type': 'application/json'
@@ -260,12 +260,15 @@ def get_summary(paper_ids, report_id, user):
         report.report_path = pdf_path
         report.status = SummaryReport.STATUS_COMPLETED
         report.save()
+        ret_content += "的综述报告生成完毕了！请前往“个人中心->综述报告”查看！"
         notification = Notification(user_id = user,title='综述报告生成成功！',content=ret_content)
         notification.save()
         # os.remove(md_path)
         # print(response)
     except Exception as e:
         print(e)
+        ret_content = "抱歉！" + ret_content + "的综述报告失败，请重新尝试。" 
+        notification = Notification(user_id = user,title='综述报告生成失败！',content=ret_content)
         report.delete()
 
 
