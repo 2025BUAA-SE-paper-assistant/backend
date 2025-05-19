@@ -548,6 +548,16 @@ def get_user_paper_info(request):
         return JsonResponse({"error": "请求方法错误", "is_success": False}, status=400)
 
 from django.views.decorators.http import require_http_methods
+import re
+def extract_title(text):
+    pattern = r'^\s*(?:<[^>]+>(?P<title1>.+?)</[^>]+>|【[^】]+】(?P<title2>.+?)\n|\"(?P<title3>.+?)\"|(?P<title4>.+?))\n'
+    match = re.match(pattern, text)
+    if match:
+        # 检查各个捕获组，返回第一个匹配到的标题
+        for group in ['title1', 'title2', 'title3', 'title4']:
+            if match.group(group):
+                return match.group(group).strip()
+    return None  # 如果没有匹配到标题，返回 None
 
 @require_http_methods(["POST"])
 def check_all_title_cn(request):
@@ -568,6 +578,11 @@ def check_all_title_cn(request):
                     if attempt > max_retries:
                         print(f"Failed to translate {paper.title}")
                         bad_papers.append(paper.title)
+        if len(paper.title_cn) > 50:
+            extracted_text = extract_title(paper.title_cn)
+            print(extracted_text)
+            paper.title_cn = extracted_text
+            paper.save()
     return JsonResponse({"bad_papers": bad_papers},status=200)
 
 @require_http_methods(['POST'])

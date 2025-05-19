@@ -269,10 +269,10 @@ def get_summary(paper_ids, report_id, user):
             summary += paper_content[i] + "\n"
         if innovation != "" :
             innovation = "## " + innovation
-            summary += innovation
+            summary += innovation + "\n"
         if limit != "" :
             limit = "## " + limit
-            summary += limit
+            summary += limit + "\n"
         summary += "\n# 结论\n" + conclusion + "\n"
         # 修改语病，更加通顺
         response = summary

@@ -347,8 +347,8 @@ def get_summary_report(request):
     report_id = request.GET.get('report_id')
     report = SummaryReport.objects.filter(report_id=report_id, user_id=user).first()
     if report:
-        with open(report.report_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-        return reply.success(data={'summary': content}, msg='综述报告获取成功')
+        # with open(report.report_path, 'r', encoding='utf-8') as f:
+        #     content = f.read()
+        return reply.success(data={'local_url': report.report_path}, msg='综述报告获取成功')
     else:
         return reply.fail(msg='综述报告不存在')
