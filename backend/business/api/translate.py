@@ -5,6 +5,45 @@ from django.conf import settings
 import json
 import requests
 
+def translate_libre(src):
+    api_url = 'https://libretranslate.com/translate'
+    headers = {
+        'Content-Type': 'application/json'
+    }
+    body = {
+        'q':src,
+        'source':'en',
+        'target':'zh-Hans',
+    }
+    response = requests.post(api_url, data=json.dumps(body), headers=headers)
+    print(response.json())
+    dst = response.json()['translatedText']
+    return dst
+
+import argostranslate.package
+import argostranslate.translate
+
+
+def argos_init():
+    from_code = "en"
+    to_code = "zh"
+    argostranslate.package.update_package_index()
+    available_packages = argostranslate.package.get_available_packages()
+    matching_packages = list(filter(
+        lambda x: x.from_code == from_code and x.to_code == to_code, available_packages
+    ))
+
+    if not matching_packages:
+        raise ValueError(f"No translation package found for {from_code}->{to_code}")
+    
+    package_to_install = matching_packages[0]
+    argostranslate.package.install_from_path(package_to_install.download())
+
+def translate_argos(src):
+    from_code = "en"
+    to_code = "zh"
+    return argostranslate.translate.translate(src, from_code, to_code)
+
 
 def translate(src):
     headers = {
@@ -52,3 +91,6 @@ def translate_text(request):
         return reply.fail(
             msg="无法连接远程服务器"
         )
+if __name__ == '__main__':
+    # argos_init()
+    print(translate_argos('MiniGPT-4: Enhancing Vision-Language Understanding with Advanced Large Language Models'))
