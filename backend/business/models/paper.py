@@ -68,7 +68,8 @@ class Paper(models.Model):
         return {
             'paper_id': self.paper_id,
             'title': self.title,
-            'title_cn':self.title_cn,
+            # 'title_cn':self.title_cn,
+            'title_cn':self.title_cn if self.abstract_cn else DeepSeek().translate_text(self.abstract),
             'authors': self.authors,
             'abstract': self.abstract,
             # 'abstract_cn': self.abstract_cn if self.abstract_cn else DeepSeek().translate_text(self.abstract),

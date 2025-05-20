@@ -459,7 +459,7 @@ def refrech_abstract_cn(request):
     else:
         return JsonResponse({"error": "请求方法错误", "is_success": False}, status=400)
 
-from business.api.translate import translate
+from business.api.translate import translate, translate_argos
 def get_paper_info(request):
     """
     获取文献信息
@@ -475,7 +475,8 @@ def get_paper_info(request):
                 paper.abstract_cn = abstract_cn
                 paper.save()
             if not paper.title_cn:
-                title_cn = translate(paper.title)
+                # title_cn = translate(paper.title)
+                title_cn = translate_argos(paper.title)
                 paper.title_cn = title_cn
                 paper.save()
             if not paper.bibtex:
@@ -549,27 +550,53 @@ def get_user_paper_info(request):
 
 from django.views.decorators.http import require_http_methods
 import re
-def extract_title(text):
-    pattern = r'^\s*(?:<[^>]+>(?P<title1>.+?)</[^>]+>|【[^】]+】(?P<title2>.+?)\n|\"(?P<title3>.+?)\"|(?P<title4>.+?))\n'
-    match = re.match(pattern, text)
-    if match:
-        # 检查各个捕获组，返回第一个匹配到的标题
-        for group in ['title1', 'title2', 'title3', 'title4']:
-            if match.group(group):
-                return match.group(group).strip()
-    return None  # 如果没有匹配到标题，返回 None
-
+# def extract_title(text):
+#     pattern = r'^\s*(?:<(?:翻译|答案|回答)>(?P<title1>.+?)</(?:翻译|答案|回答)>|【(?P<title2>.+?)】|\"(?P<title3>.+?)\"|(?P<title4>.+?))\n'
+#     match = re.match(pattern, text)
+#     if match:
+#         # 检查各个捕获组，返回第一个匹配到的标题
+#         for group in ['title1', 'title2', 'title3', 'title4']:
+#             if match.group(group):
+#                 return match.group(group).strip()
+    # return None  # 如果没有匹配到标题，返回 None
+# def extract_title(text):
+#     # 提取第一行内容
+#     first_line_match = re.search(r'^.*?(?=\n|$)', text)
+#     if not first_line_match:
+#         return ''
+#     first_line = first_line_match.group().strip()
+    
+#     # 尝试匹配被包裹的标题
+#     title_match = re.fullmatch(
+#         r'\s*(?:<[^>]+>|【[^】]*】|["“])\s*(.*?)\s*(?:<\/[^>]+>|】|["”])\s*',
+#         first_line
+#     )
+#     if title_match and title_match.group(1).strip():
+#         return title_match.group(1).strip()
+#     else:
+#         return first_line
+def contains_chinese(text):
+    """检查字符串中是否包含至少一个中文字符"""
+    pattern = re.compile(r'[\u4e00-\u9fff\u3400-\u4dbf]')  # 覆盖基本和扩展中文字符范围
+    return bool(pattern.search(text))
 @require_http_methods(["POST"])
 def check_all_title_cn(request):
     papers = Paper.objects.all()
     bad_papers = []
     max_retries = 3
     for paper in tqdm.tqdm(papers):
-        if not paper.title_cn:
+        if True or not paper.title_cn or len(paper.title_cn) > 30 or not contains_chinese(paper.title_cn):
             attempt = 1
             while attempt <= max_retries:
                 try:
-                    title_cn = translate(paper.title)
+                    sub_text = paper.title.split(':',1)
+                    # print(sub_text)
+                    if len(sub_text) == 1:
+                        title_cn = translate_argos(paper.title)
+                    else:
+                        # A:B
+                        title_cn = sub_text[0] + ': ' +translate_argos(sub_text[1])
+                    # print(title_cn)
                     paper.title_cn = title_cn
                     paper.save()
                     break
@@ -578,11 +605,6 @@ def check_all_title_cn(request):
                     if attempt > max_retries:
                         print(f"Failed to translate {paper.title}")
                         bad_papers.append(paper.title)
-        if len(paper.title_cn) > 50:
-            extracted_text = extract_title(paper.title_cn)
-            print(extracted_text)
-            paper.title_cn = extracted_text
-            paper.save()
     return JsonResponse({"bad_papers": bad_papers},status=200)
 
 @require_http_methods(['POST'])
