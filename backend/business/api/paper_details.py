@@ -589,14 +589,15 @@ def check_all_title_cn(request):
             attempt = 1
             while attempt <= max_retries:
                 try:
-                    sub_text = paper.title.split(':',1)
-                    # print(sub_text)
-                    if len(sub_text) == 1:
-                        title_cn = translate_argos(paper.title)
-                    else:
-                        # A:B
-                        title_cn = sub_text[0] + ': ' +translate_argos(sub_text[1])
+                    # sub_text = paper.title.split(':',1)
+                    # # print(sub_text)
+                    # if len(sub_text) == 1:
+                    #     title_cn = translate_argos(paper.title)
+                    # else:
+                    #     # A:B
+                    #     title_cn = sub_text[0] + ': ' +translate_argos(sub_text[1])
                     # print(title_cn)
+                    title_cn = translate_argos(paper.title)
                     paper.title_cn = title_cn
                     paper.save()
                     break
