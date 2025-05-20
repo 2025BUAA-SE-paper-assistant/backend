@@ -623,7 +623,7 @@ from django.db.models import Sum
 @require_http_methods('GET')
 def word_trend(request):
     now = datetime.datetime.now()
-    start_period = now - datetime.timedelta(hours=24)
+    start_period = now - datetime.timedelta(days=7)
 
     # 聚合查询关键词总频次
     hot_keywords = (
@@ -634,16 +634,16 @@ def word_trend(request):
         .order_by('-total')[:10]  # 按总频次降序取前10
     )
     pre_keywords = {
-            'Computing Chips':7,
-            'Information Management':3,
-            'AI4Science':8,
-            'Million-Token Context':2,
-            'Quantum Computing':6,
-            'AI Infra':5,
-            'Multimodal':1,
-            'Data Security':9,
-            'HPC Competitions':4,
-            'AI-Industry':10,
+            'deep Learning':7,
+            '3D Reconstruction':3,
+            'Multimodal AI':8,
+            'Autonomous Driving':2,
+            'Image Classification':6,
+            'Object Detection':5,
+            'Defect Detection':1,
+            'Region of Interest':9,
+            'Image Recognition':4,
+            'CNN':10,
         }
     # 如果热搜词不足十个，利用预设的热搜词补齐
     hot_keywords = list(hot_keywords)
