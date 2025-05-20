@@ -585,25 +585,26 @@ def check_all_title_cn(request):
     bad_papers = []
     max_retries = 3
     for paper in tqdm.tqdm(papers):
-        if True or not paper.title_cn or len(paper.title_cn) > 30 or not contains_chinese(paper.title_cn):
+        if not paper.title_cn or not contains_chinese(paper.title_cn):
             attempt = 1
             while attempt <= max_retries:
                 try:
-                    sub_text = paper.title.split(':',1)
-                    # print(sub_text)
-                    if len(sub_text) == 1:
-                        title_cn = translate_argos(paper.title)
-                    else:
-                        # A:B
-                        title_cn = sub_text[0] + ': ' +translate_argos(sub_text[1])
+                    # sub_text = paper.title.split(':',1)
+                    # # print(sub_text)
+                    # if len(sub_text) == 1:
+                    #     title_cn = translate_argos(paper.title)
+                    # else:
+                    #     # A:B
+                    #     title_cn = sub_text[0] + ': ' +translate_argos(sub_text[1])
                     # print(title_cn)
+                    title_cn = translate_argos(paper.title)
                     paper.title_cn = title_cn
                     paper.save()
                     break
                 except Exception as e:
                     attempt += 1
                     if attempt > max_retries:
-                        print(f"Failed to translate {paper.title}")
+                        print(f"Failed to translate {paper.title} for exception{e}")
                         bad_papers.append(paper.title)
     return JsonResponse({"bad_papers": bad_papers},status=200)
 
