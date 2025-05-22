@@ -154,18 +154,18 @@ def get_summary(paper_ids, report_id, user):
         for id in paper_ids:
             p = Paper.objects.filter(paper_id=id).first()
             content_prompt = (
-                "将这篇论文的摘要以第三人称的方式复述一遍，摘要如下：\n" + p.abstract_cn
+                "使用简体中文将这篇论文的摘要以第三人称的方式复述一遍，摘要如下：\n" + p.abstract_cn
             )
             paper_content.append(queryGLM(content_prompt, []))
-            content_prompt = "将这篇论文的题目转化为中文：\n" + p.title
+            content_prompt = "将这篇论文的题目转化为简体中文：\n" + p.title
             paper_themes.append(queryGLM(content_prompt, []))
             # paper_themes.append(p.title_cn)
             content_prompt = (
-                "将这篇论文的现状部分以第三人称的方式复述一遍：\n" + p.abstract_cn
+                "使用简体中文将这篇论文的现状部分以第三人称的方式复述一遍：\n" + p.abstract_cn
             )
             paper_situations.append(queryGLM(content_prompt, []))
             content_prompt = (
-                "将这篇论文的结论和展望部分以第三人称的方式复述一遍：\n" + p.abstract_cn
+                "使用简体中文将这篇论文的结论和展望部分以第三人称的方式复述一遍：\n" + p.abstract_cn
             )
             paper_conclusions.append(queryGLM(content_prompt, []))
         # 生成引言

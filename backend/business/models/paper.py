@@ -68,8 +68,8 @@ class Paper(models.Model):
         return {
             'paper_id': self.paper_id,
             'title': self.title,
-            # 'title_cn':self.title_cn,
-            'title_cn':self.title_cn if self.abstract_cn else DeepSeek().translate_text(self.abstract),
+            'title_cn':self.title_cn,
+            # 'title_cn':self.title_cn if self.title_cn else DeepSeek().translate_text(self.title),
             'authors': self.authors,
             'abstract': self.abstract,
             # 'abstract_cn': self.abstract_cn if self.abstract_cn else DeepSeek().translate_text(self.abstract),
@@ -102,11 +102,11 @@ class Paper(models.Model):
         return hash(self.paper_id)
 
     def get_mind_map(self):
-        if self.mind_map:
-            return self.mind_map
-        else:
+        # if self.mind_map:
+        #     return self.mind_map
+        # else:
             # 调用DeepSeek的get_mind_map方法生成思维导图
-            mind_map = DeepSeek().get_mind_map(self.abstract)
-            self.mind_map = mind_map
-            self.save()
-            return mind_map
+        mind_map = DeepSeek().get_mind_map(self.abstract)
+        self.mind_map = mind_map
+        self.save()
+        return mind_map
