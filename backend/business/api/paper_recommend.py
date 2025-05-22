@@ -188,8 +188,8 @@ def refreshCache():
     for paper in papers:
         from business.models import Paper
 
-        p = Paper.objects.get(paper_id=paper)
-        info.extend(p.to_dict())
+        # p = Paper.objects.get(paper_id=paper)
+        info.extend(paper.to_dict())
     cache.set("recommended_papers", info, timeout=86400)
 
 
