@@ -1251,7 +1251,7 @@ def dialog_query(request):
         # for paper in filtered_paper:
         #     papers.append(paper)
         # print(papers)
-        content = "根据您的需求，我们检索到了一些论文信息"
+        content = "根据您的需求，我们检索到了一些论文信息，见下方蓝色论文卡片"
         # for i in range(len(papers)):
         #     content + '\n' + f'第{i}篇：'
         #     # TODO: 这里需要把papers的信息整理到content里面
@@ -1267,7 +1267,7 @@ def dialog_query(request):
             #     back_papers.append(paper.to_dict())
             # print(back_papers)
             # content += "同时，我们针对该研究背景检索到了一些论文信息作为补充"
-            content_add = "同时，我们针对该研究背景检索到了一些论文信息作为补充"
+            content_add = "同时，我们针对该研究背景检索到了一些论文信息作为补充，见下方绿色论文卡片"
             # for i in range(len(filtered_papers)):
             #     content + '\n' + f'第{i}篇：'
             #     # TODO: 这里需要把papers的信息整理到content里面
@@ -1316,9 +1316,14 @@ def dialog_query(request):
     ret_papers = []
     for paper in papers:
         ret_papers.append(paper.to_dict())
+    s2 = set(papers)
+    s1 = set(papers_add)
+    papers_add = list(s1.difference(s2))    
     ret_papers_add = []
     for paper in papers_add:
         ret_papers_add.append(paper.to_dict())
+    if ret_papers_add:
+        content = content + '；' + content_add
     res = {"dialog_type": dialog_type, "papers": ret_papers, "content": content,
            'papers_add':ret_papers_add, 'content_add':content_add}
     return reply.success(res, msg="成功返回对话")
