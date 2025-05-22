@@ -141,7 +141,6 @@ def query_arxiv_by_date_and_field(
         print("Failed to fetch data.")
     return papers
 
-
 def refreshCache():
     # 在这里写你想要执行的任务
     # 获取当前日期，以及前一周的日期
@@ -160,7 +159,11 @@ def refreshCache():
     # 获取过去三十天的所有论文
     start_date = (last_month).strftime("%Y-%m-%d")
     end_date = (today).strftime("%Y-%m-%d")
-    papers = query_arxiv_by_date_and_field(start_date, end_date)
+    try:
+        papers = query_arxiv_by_date_and_field(start_date, end_date)
+    except Exception as e:
+        logger.error(f"Error fetching papers: {e}")
+        return
     # 从中提取关键词
     keywords = []
     for paper in papers:
@@ -216,7 +219,7 @@ def get_recommendation(request):
     # 将选中的论文对象转换为字典
     papers = [paper.to_dict() for paper in selected_papers]
     # 将推荐数据缓存一天
-    cache.set("recommended_papers", papers, timeout=86400)
+    # cache.set("recommended_papers", papers, timeout=86400)
 
     return reply.success(data={"papers": papers}, msg="success")
 
