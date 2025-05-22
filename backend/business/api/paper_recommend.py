@@ -184,13 +184,15 @@ def refreshCache():
 
     papers = get_filtered_paper(key, k=10)
     # 将推荐数据缓存一天
+    # print(papers)
     info = []
     for paper in papers:
-        from business.models import Paper
-
+        # print(type(paper))
+        # from business.models import Paper
         # p = Paper.objects.get(paper_id=paper)
-        info.extend(paper.to_dict())
-    cache.set("recommended_papers", info, timeout=86400)
+        info.append(paper.paper_id)
+    cache.set("recommended_paper_ids", info, timeout=86400)
+    logger.info(f"成功更新推荐缓存，推荐论文ID: {info}")
 
 
 from django.core.cache import cache
@@ -198,11 +200,16 @@ from django.core.cache import cache
 
 def get_recommendation(request):
     # 尝试从缓存中获取推荐数据
-    cached_papers = cache.get("recommended_papers")
-    if cached_papers:
-        return reply.success(data={"papers": cached_papers}, msg="success")
+    cached_paper_ids = cache.get("recommended_paper_ids")
+    if cached_paper_ids:
+        ret_data = []
+        for paper_id in cached_paper_ids:
+            paper = Paper.objects.get(paper_id=paper_id)
+            ret_data.append(paper.to_dict())
+        return reply.success(data={"papers": ret_data}, msg="success")
     else:
         # 挂一个线程去刷新缓存
+        logger.info("推荐缓存未命中，正在刷新...")
         import threading
 
         t = threading.Thread(target=refreshCache)
@@ -219,8 +226,9 @@ def get_recommendation(request):
     # 将选中的论文对象转换为字典
     papers = [paper.to_dict() for paper in selected_papers]
     # 将推荐数据缓存一天
-    # cache.set("recommended_papers", papers, timeout=86400)
-
+    cache.set("recommended_paper_ids", selected_paper_ids, timeout=86400)
+    
+    print('???')
     return reply.success(data={"papers": papers}, msg="success")
 
 from django.views.decorators.http import require_http_methods
