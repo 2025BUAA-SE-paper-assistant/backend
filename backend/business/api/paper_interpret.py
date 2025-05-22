@@ -468,12 +468,12 @@ def _get_ai_reply(payload):
                 data = json.loads(data)
                 if "answer" in data:
                     ai_reply += data["answer"]
-                    yield json.dumps({"data": data["answer"]},ensure_ascii=False)+"\n"
+                    yield data["answer"]
                 if "docs" in data:
                     for doc in data["docs"]:
                         doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
                         origin_docs.append(doc)
-                    yield json.dumps({"docs": origin_docs}, ensure_ascii=False) + "\n"
+                    yield {"docs": origin_docs}
 
 def do_file_chat(conversation_history, query, tmp_kb_id):
     # 将历史记录与本次对话发送给服务器, 获取对话结果
@@ -515,14 +515,12 @@ def get_next_question(ai_reply,conversation_history, query, tmp_kb_id):
             "temperature": 0.4,
         }
     )
-    question_reply, _ = _get_ai_reply(payload)
-    question_reply = re.findall(r'"prediction_\d+":\s*"([^"]+)"', question_reply)
+    reply_str = "".join(_get_ai_reply(payload))
+    question_reply = re.findall(r'"prediction_\d+":\s*"([^"]+)"', reply_str)
     print(question_reply)
     question_reply = question_reply[:2]
     question_reply.append("针对上一个问题做更详细的回复")
-    return json.dumps({"question":question_reply},ensure_ascii=False)+'\n'
-
-
+    return json.dumps({"question": question_reply}, ensure_ascii=False) + '\n'+'\n'
 
 
 def add_conversation_history(conversation_history, query, ai_reply, conversation_path):
