@@ -121,7 +121,7 @@ def score_paper(request):
     else:
         return JsonResponse({"error": "请求方法错误", "is_success": False}, status=400)
 
-
+@transaction.atomic
 def collect_paper(request):
     """
     收藏/取消收藏文献
@@ -130,22 +130,30 @@ def collect_paper(request):
         data = json.loads(request.body)
         username = request.session.get("username")
         paper_id = data.get("paper_id")
-        user = User.objects.filter(username=username).first()
-        paper = Paper.objects.filter(paper_id=paper_id).first()
+        # user = User.objects.filter(username=username).first()
+        # paper = Paper.objects.filter(paper_id=paper_id).first()
+        user = User.objects.select_for_update().filter(username=username).first()
+        paper = Paper.objects.select_for_update().filter(paper_id=paper_id).first()
+        if not user or not paper:
+            return JsonResponse(
+                {"error": "用户或文献不存在", "is_success": False}, status=400
+            )
         collected = user.collected_papers.filter(paper_id=paper_id).first()
         # 取消收藏
         if collected:
             user.collected_papers.remove(paper)
             # paper.collect_count() -= 1
-            user.save()
-            paper.save()
+            Paper.objects.filter(paper_id=paper_id).update(collect_count=F('collect_count') - 1)
+            # user.save()
+            # paper.save()
             return JsonResponse({"message": "取消收藏成功", "is_success": True})
         # 收藏
         if user and paper:
             user.collected_papers.add(paper)
             # paper.collect_count += 1
-            user.save()
-            paper.save()
+            Paper.objects.filter(paper_id=paper_id).update(collect_count=F('collect_count') + 1)
+            # user.save()
+            # paper.save()
             return JsonResponse({"message": "收藏成功", "is_success": True})
         else:
             return JsonResponse(

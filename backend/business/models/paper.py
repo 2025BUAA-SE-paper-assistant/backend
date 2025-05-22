@@ -46,8 +46,8 @@ class Paper(models.Model):
     download_count = models.IntegerField(default=0)
     score = models.FloatField(default=0.0)
     score_count = models.IntegerField(default=0)
-    like_count = models.IntegerField(default=None, null=True)  # 点赞次数，允许为空
-    collect_count = models.IntegerField(default=None,null=True)  # 收藏次数，允许为空
+    like_count = models.IntegerField(default=0, null=True)  # 点赞次数，允许为空
+    collect_count = models.IntegerField(default=0,null=True)  # 收藏次数，允许为空
     local_path = models.CharField(max_length=255)  # 本地地址，允许为空
     sub_classes = models.ManyToManyField(Subclass, related_name='papers')
     paragraph = models.TextField(null=True)  # 段落信息，允许为空
