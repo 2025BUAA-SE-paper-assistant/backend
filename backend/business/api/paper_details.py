@@ -35,6 +35,10 @@ if not os.path.exists(BATCH_DOWNLOAD_PATH):
     os.makedirs(BATCH_DOWNLOAD_PATH)
 
 from business.utils.activity import update_user_activity
+from django.db.models import F
+from django.db import transaction
+# 原子事务
+@transaction.atomic
 def like_paper(request):
     """
     点赞/取消点赞文献
@@ -43,22 +47,30 @@ def like_paper(request):
         data = json.loads(request.body)
         username = request.session.get("username")
         paper_id = data.get("paper_id")
-        user = User.objects.filter(username=username).first()
-        paper = Paper.objects.filter(paper_id=paper_id).first()
-        liked = user.liked_papers.filter(paper_id=paper_id).first()
+        # user = User.objects.filter(username=username).first()
+        # paper = Paper.objects.filter(paper_id=paper_id).first()
+        user = User.objects.select_for_update().filter(username=username).first()
+        paper = Paper.objects.select_for_update().filter(paper_id=paper_id).first()
         # 取消点赞
+        if not user or not paper_id:
+            return JsonResponse(
+                {"error": "用户或文献不存在", "is_success": False}, status=400
+            )
+        liked = user.liked_papers.filter(paper_id=paper_id).first()
         if liked:
             user.liked_papers.remove(paper)
             # paper.like_count -= 1
-            user.save()
-            paper.save()
+            Paper.objects.filter(paper_id=paper_id).update(like_count=F('like_count') - 1)
+            # user.save()
+            # paper.save()
             return JsonResponse({"message": "取消点赞成功", "is_success": True})
         # 点赞
         if user and paper:
             user.liked_papers.add(paper)
             # paper.like_count += 1
-            user.save()
-            paper.save()
+            Paper.objects.filter(paper_id=paper_id).update(like_count=F('like_count') + 1)
+            # user.save()
+            # paper.save()
 
             update_user_activity(user.user_id, type='like')
             return JsonResponse({'message': '点赞成功', 'is_success': True})
@@ -498,8 +510,8 @@ def get_paper_info(request):
                 "journal": paper.journal,
                 "citation_count": paper.citation_count,
                 "read_count": paper.read_count,
-                "like_count": paper.like_count(),
-                "collect_count": paper.collect_count(),
+                "like_count": paper.like_count if paper.like_count else paper.get_like_count(),
+                "collect_count": paper.collect_count if paper.collect_count else paper.get_collect_count(),
                 "download_count": paper.download_count,
                 "comment_count": paper.comment_count,
                 "score": paper.score,

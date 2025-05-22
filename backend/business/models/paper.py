@@ -46,6 +46,8 @@ class Paper(models.Model):
     download_count = models.IntegerField(default=0)
     score = models.FloatField(default=0.0)
     score_count = models.IntegerField(default=0)
+    like_count = models.IntegerField(default=None, null=True)  # 点赞次数，允许为空
+    collect_count = models.IntegerField(default=None,null=True)  # 收藏次数，允许为空
     local_path = models.CharField(max_length=255)  # 本地地址，允许为空
     sub_classes = models.ManyToManyField(Subclass, related_name='papers')
     paragraph = models.TextField(null=True)  # 段落信息，允许为空
@@ -63,6 +65,11 @@ class Paper(models.Model):
 
     def get_paper_id(self):
         return str(self.paper_id)
+    
+    def get_like_count(self):
+        return self.liked_by_users.count()
+    def get_collect_count(self):
+        return self.collected_by_users.count()
 
     def to_dict(self):
         return {
@@ -79,8 +86,8 @@ class Paper(models.Model):
             'citation_count': self.citation_count,
             'original_url': self.original_url,
             'read_count': self.read_count,
-            'like_count': self.like_count(),
-            'collect_count': self.collect_count(),
+            'like_count': self.like_count if self.like_count else self.get_like_count(),
+            'collect_count': self.collect_count if self.collect_count else self.get_collect_count(),
             'comment_count': self.comment_count,
             'download_count': self.download_count,
             'score': self.score,
@@ -90,10 +97,7 @@ class Paper(models.Model):
             'bibtex':self.bibtex,
             'mind_map': self.get_mind_map(),
         }
-    def like_count(self):
-        return self.liked_by_users.count()
-    def collect_count(self):
-        return self.collected_by_users.count()
+
 
     def __eq__(self, other):
         return self.paper_id == other.paper_id if isinstance(other, Paper) else False
