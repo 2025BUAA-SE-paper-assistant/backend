@@ -413,7 +413,7 @@ def is_pdf_corrupted(file_path,paper):
         #     reader = PdfReader(f)
             # 如果能够成功读取页面数量而不抛出异常，则文件可能正常
             # num_pages = len(reader.pages)
-        
+
         # 未解析段落分块
         if not paper.paragraph:
             paragrahs = []
@@ -444,19 +444,6 @@ def get_paper_local_url(paper):
     local_pdf = paper.local_path
     max_retries = 3
     retries = 0
-    # if not local_path:
-    #     original_url = paper.original_url
-    #     # 将路径中的abs修改为pdf
-    #     original_url = original_url.replace("abs", "pdf")
-    #     # 访问url，下载文献到服务器
-    #     filename = str(paper.paper_id)
-        # local_path = downloadPaper(original_url, filename)
-    #     if local_path is None:
-    #         return None
-    #     paper.refresh_from_db()
-    #     paper.local_path = local_path
-    #     paper.save()
-    # return local_path
     while retries < max_retries:
         if local_pdf and os.path.exists(local_pdf):
             # 检查 PDF 文件是否损坏
@@ -589,7 +576,7 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
             decoded_line = line.decode('utf-8')
             if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
                 continue
-        
+
             if decoded_line.startswith('data'):
                 data = json.loads(decoded_line.replace('data: ', ''))
                 ans += data['text']
@@ -680,7 +667,6 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
             # 调用原生大模型
             if(has_history) :
                 data_1 = {
-                # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
                     "query": f"{query_1}",
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
@@ -693,7 +679,6 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
                 }
             else:
               data_1 = {
-                # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
                     "query": f"{query_1}",
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
@@ -741,7 +726,7 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
                     "query": query_2, # 原文
                     "temperature": 0.7, # temp
                     "top_k": 10,
-                    "stream": False, 
+                    "stream": False,
                     "max_tokens": 2048,
                     "search_engine_name": "bing",
                     "model_name": "chatglm3-6b", # 模型
@@ -774,10 +759,9 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
 
             ai_reply_3 = ""
             origin_docs_3 = []
-            
+
             if need_3:
                 data_3 = {
-                    # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
                     "query": f"{query_3}",
                     "knowledge_base_name": "Paper_all_in_one",
                     "temperature": 0.7,
@@ -812,7 +796,6 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
 
             if(has_history) :
                 data_4 = {
-                    # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
                     "query": f"原生模型输出：{ai_reply_1}\n搜索引擎输出:{ai_reply_2}\n科研模型输出:{ai_reply_3}\n",
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
@@ -825,7 +808,6 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
                 }
             else :
                 data_4 = {
-                    # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
                     "query": f"原生模型输出：{ai_reply_1}\n搜索引擎输出:{ai_reply_2}\n科研模型输出:{ai_reply_3}\n",
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
@@ -860,9 +842,9 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
                             for doc in data["docs"]:
                                 doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
                                 origin_docs.append(doc)
-        # print("最终输出：",ai_reply)                        
+        # print("最终输出：",ai_reply)
         return ai_reply, origin_docs
-    
+
     def _get_ai_reply(payload):
         response = requests.request(
             "POST", file_chat_url, data=payload, headers=headers, stream=False
@@ -893,17 +875,6 @@ def do_file_chat(conversation_history, query, tmp_kb_id):
     # 给出用户仍可能存在的问题
     def _get_prob_paper_study_question():
 
-        # empty模板不含任何知识库信息
-        # payload = json.dumps(
-        #     {
-        #         "query": query,
-        #         "knowledge_id": tmp_kb_id,
-        #         "history": conversation_history[-4:],
-        #         "prompt_name": "question",  # 使用问题模式
-        #         "max_tokens": 50,
-        #         "temperature": 0.4,
-        #     }
-        # )
         payload = json.dumps(
             {
                 "query": f"问题：{query}\n 回复：{ai_reply}",
@@ -1065,55 +1036,6 @@ def re_do_paper_study(request):
         msg="成功",
     )
 
-
-# @require_http_methods(["POST"])
-# def paper_interpret(request):
-#     # mark:已被放弃
-#     '''
-#     本文件唯一的接口，类型为POST
-#     根据用户的问题，返回一个回答
-#     思路如下：
-#         1. 根据session获得用户的username, request中包含local_path和question
-#         2. 根据paper_id得到向量库中各段落的向量，根据question得到问题的向量，选择最相似的段落
-#         3. 将段落输入到ChatGLM2-6B中，得到回答，进行总结，给出一个本文中的回答
-#         4. 查找与其相似度最高的几篇文章的段落，相似度最高的5个段落，对每段给出一个简单的总结。
-#         5. 将几个总结和回答拼接返回
-#         6. 把聊天记录保存到数据库中，见backend/business/models/file_reading.py
-#     return : {
-#         content: str
-#     }
-#     '''
-#     if request.method == 'POST':
-#         data = json.loads(request.body)
-#         local_path = data['local_path']
-#         question = data['question']
-#         username = request.session.get('username')
-#         user = User.objects.get(username=username)
-#         file = FileReading.objects.get(user_id=user, file_local_path=local_path)
-#         conversation = []
-#         conversation_path = ''
-#         if file is None:
-#             # 新建一个研读记录
-#             t = get_pdf_title(local_path)
-#             file = FileReading(user_id=user.user_id, file_local_path=local_path, title=t, conversation_path=None)
-#             file.conversation_path = f'{USER_READ_CONSERVATION_PATH}/{file.user_id.id}_{file.title}.txt'
-#             conversation_path = file.conversation_path
-#             file.save()
-#         else:
-#             conversation_path = file.conversation_path
-#             with open(conversation_path, 'r') as f:
-#                 conversation = json.load(f)
-#         conversation.append({'role': 'user', 'content': question})
-#         # 从数据库中找到最相似的段落
-#
-#             # print(f"Received data (Client ID {client_id}): {data}")
-#         elif decoded_line.startswith('event'):
-#             event_type = decoded_line.replace('event: ', '')
-#             # print(f"Event type: {event_type}")
-#     finally:
-#         response.close()
-#     # print(response)  # 目前不清楚是何种返回 TODO:
-#     return reply.success({"ai_reply": ai_reply, "docs": origin_docs}, msg="成功")
 @require_http_methods(["POST"])
 def clear_conversation(request):
     # 鉴权
