@@ -121,7 +121,7 @@ def get_summary(paper_ids, report_id, user):
             articles += f"Title_{i}: {p.title}\nAbstrastract_{i}: {p.abstract}"
             ret_content += f"《{p.title}》、"
             i = i + 1
-        ret_content = ret_content[:-2]
+        ret_content = ret_content[:-1]
         base_url = "http://10.2.16.28:2334/chat" #ai URL
         headers = {
             'Content-Type': 'application/json'
@@ -154,18 +154,18 @@ def get_summary(paper_ids, report_id, user):
         for id in paper_ids:
             p = Paper.objects.filter(paper_id=id).first()
             content_prompt = (
-                "将这篇论文的摘要以第三人称的方式复述一遍，摘要如下：\n" + p.abstract_cn
+                "使用简体中文将这篇论文的摘要以第三人称的方式复述一遍，摘要如下：\n" + p.abstract_cn
             )
             paper_content.append(queryGLM(content_prompt, []))
-            content_prompt = "将这篇论文的题目转化为中文：\n" + p.title
+            content_prompt = "将这篇论文的题目转化为简体中文：\n" + p.title
             paper_themes.append(queryGLM(content_prompt, []))
             # paper_themes.append(p.title_cn)
             content_prompt = (
-                "将这篇论文的现状部分以第三人称的方式复述一遍：\n" + p.abstract_cn
+                "使用简体中文将这篇论文的现状部分以第三人称的方式复述一遍：\n" + p.abstract_cn
             )
             paper_situations.append(queryGLM(content_prompt, []))
             content_prompt = (
-                "将这篇论文的结论和展望部分以第三人称的方式复述一遍：\n" + p.abstract_cn
+                "使用简体中文将这篇论文的结论和展望部分以第三人称的方式复述一遍：\n" + p.abstract_cn
             )
             paper_conclusions.append(queryGLM(content_prompt, []))
         # 生成引言
@@ -198,7 +198,7 @@ def get_summary(paper_ids, report_id, user):
             "temperature": 0.2, # temp
             "stream": False, 
             "model_name": "chatglm3-6b", # 模型
-            "max_tokens": 4096,
+            "max_tokens": 8192,
             "prompt_name": "tech_innovation_analyzer", # prompt类型
         }
 
@@ -232,7 +232,7 @@ def get_summary(paper_ids, report_id, user):
             "temperature": 0.3, # temp
             "stream": False, 
             "model_name": "chatglm3-6b", # 模型
-            "max_tokens": 4096,
+            "max_tokens": 8192,
             "prompt_name": "performance_analyzer", # prompt类型
         }
 
@@ -258,7 +258,39 @@ def get_summary(paper_ids, report_id, user):
                 # 从匹配行开始，拼接后续所有行
                 limit = '\n'.join(lines[idx:]).strip()
 
-        # limit = "## " + limit     
+        print("结论生成开始")
+        data = {
+            "query": f"{articles}", # 原文
+            "temperature": 0.3, # temp
+            "stream": False, 
+            "model_name": "chatglm3-6b", # 模型
+            "max_tokens": 8192,
+            "prompt_name": "future_vision_generator", # prompt类型
+        }
+
+        payload = json.dumps(data)
+
+        response = requests.post(f"{base_url}/chat", data=payload, headers=headers, stream=False)
+        ans = ""
+        # 捕获输出
+        for line in response.iter_lines():
+            decoded_line = line.decode('utf-8')
+            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                continue
+        # print(decoded_line)
+            if decoded_line.startswith('data'):
+                data = json.loads(decoded_line.replace('data: ', ''))
+                ans += data['text']
+
+        lines = ans.splitlines()
+        conclusions = ""
+        for idx, line in enumerate(lines):
+            if line.strip() == '# 研究结论与未来展望':
+                # 从匹配行开始，拼接后续所有行
+                conclusions = '\n'.join(lines[idx:]).strip()
+
+        # 捕获所有问题的内容
+        print("研究结论与未来展望结束")     
                 
                  
         # 生成综述
@@ -273,7 +305,10 @@ def get_summary(paper_ids, report_id, user):
         if limit != "" :
             limit = "## " + limit
             summary += limit + "\n"
-        summary += "\n# 结论\n" + conclusion + "\n"
+        if conclusions != "" :
+            summary += "\n" + conclusions + "\n"
+        else :
+            summary += "\n# 结论\n" + conclusion + "\n"
         # 修改语病，更加通顺
         response = summary
         os.makedirs(os.path.dirname(settings.USER_REPORTS_PATH), exist_ok=True)
@@ -285,7 +320,7 @@ def get_summary(paper_ids, report_id, user):
         report.report_path = pdf_path
         report.status = SummaryReport.STATUS_COMPLETED
         report.save()
-        ret_content += "的综述报告生成完毕了！请前往“个人中心->综述报告”查看！"
+        ret_content += f"的综述报告生成完毕了！ 对应的id为{report.report_id}。请前往“个人中心->综述报告”查看！"
         notification = Notification(user_id = user,title='综述报告生成成功！',content=ret_content)
         notification.save()
         # os.remove(md_path)

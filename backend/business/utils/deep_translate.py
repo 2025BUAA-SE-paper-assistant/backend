@@ -1,5 +1,22 @@
 import json
+import logging
 import openai
+import re
+
+def extract_and_clean_mermaid(content):
+    # 提取三个反引号之间的内容，允许多行
+    # 非贪婪匹配，直到遇到下一个```或字符串结尾
+    pattern = r'```([\s\S]*?)(?:```|$)'
+    match = re.search(pattern, content)
+
+    if match:
+        mermaid_content = match.group(1).strip()
+        # 去除字符串中的"mermind"（假设是拼写错误，可能想删除"mermaid"）
+        cleaned_content = mermaid_content.replace('mermaid', '')
+        return cleaned_content
+    else:
+        logging.warning("No mermaid content found in the input string.")
+        return content
 
 class DeepSeek:
     def __init__(self, api_key="", base_url="https://api.deepseek.com/v1"):
@@ -49,6 +66,8 @@ class DeepSeek:
         # print(response["choices"][0]["message"]["content"])
         return response["choices"][0]["message"]["content"]
 
+        # return extract_and_clean_mermaid(mermind)
+
     def get_mind_map(self, text):
         #TODO: 讲这里的硬编码改到配置里面
         response = openai.ChatCompletion.create(
@@ -62,7 +81,8 @@ class DeepSeek:
             stream=False
         )
         # print(response["choices"][0]["message"]["content"])
-        return response["choices"][0]["message"]["content"]
+        mermaid = response["choices"][0]["message"]["content"]
+        return extract_and_clean_mermaid(mermaid)
 
 if __name__ == "__main__":
     ds = DeepSeek(api_key="sk-b0996543be5941d9a2bad73b9b12df35")

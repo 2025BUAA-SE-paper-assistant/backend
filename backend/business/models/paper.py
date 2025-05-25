@@ -46,6 +46,8 @@ class Paper(models.Model):
     download_count = models.IntegerField(default=0)
     score = models.FloatField(default=0.0)
     score_count = models.IntegerField(default=0)
+    like_count = models.IntegerField(default=0, null=True)  # 点赞次数，允许为空
+    collect_count = models.IntegerField(default=0,null=True)  # 收藏次数，允许为空
     local_path = models.CharField(max_length=255)  # 本地地址，允许为空
     sub_classes = models.ManyToManyField(Subclass, related_name='papers')
     paragraph = models.TextField(null=True)  # 段落信息，允许为空
@@ -63,37 +65,39 @@ class Paper(models.Model):
 
     def get_paper_id(self):
         return str(self.paper_id)
+    
+    def get_like_count(self):
+        return self.liked_by_users.count()
+    def get_collect_count(self):
+        return self.collected_by_users.count()
 
     def to_dict(self):
         return {
             'paper_id': self.paper_id,
             'title': self.title,
             # 'title_cn':self.title_cn,
-            'title_cn':self.title_cn if self.abstract_cn else DeepSeek().translate_text(self.abstract),
+            # 'title_cn':self.title_cn if self.title_cn else DeepSeek().translate_text(self.title),
             'authors': self.authors,
             'abstract': self.abstract,
             # 'abstract_cn': self.abstract_cn if self.abstract_cn else DeepSeek().translate_text(self.abstract),
-            'abstract_cn': self.abstract_cn,
+            # 'abstract_cn': self.abstract_cn,
             'publication_date': self.publication_date,
             'journal': self.journal,
             'citation_count': self.citation_count,
             'original_url': self.original_url,
             'read_count': self.read_count,
-            'like_count': self.like_count(),
-            'collect_count': self.collect_count(),
+            'like_count': self.like_count if self.like_count else self.get_like_count(),
+            'collect_count': self.collect_count if self.collect_count else self.get_collect_count(),
             'comment_count': self.comment_count,
             'download_count': self.download_count,
             'score': self.score,
             'score_count': self.score_count,
             'sub_classes': list(self.sub_classes.values_list('name', flat=True)),
-            'paragraph': self.paragraph,
-            'bibtex':self.bibtex,
-            'mind_map': self.get_mind_map(),
+            # 'paragraph': self.paragraph,
+            # 'bibtex':self.bibtex,
+            # 'mind_map': self.mind_map if self.mind_map else self.get_mind_map(),
         }
-    def like_count(self):
-        return self.liked_by_users.count()
-    def collect_count(self):
-        return self.collected_by_users.count()
+
 
     def __eq__(self, other):
         return self.paper_id == other.paper_id if isinstance(other, Paper) else False
@@ -102,11 +106,13 @@ class Paper(models.Model):
         return hash(self.paper_id)
 
     def get_mind_map(self):
-        if self.mind_map:
-            return self.mind_map
-        else:
+        # if self.mind_map:
+        #     return self.mind_map
+        # else:
             # 调用DeepSeek的get_mind_map方法生成思维导图
-            mind_map = DeepSeek().get_mind_map(self.abstract)
-            self.mind_map = mind_map
-            self.save()
-            return mind_map
+        print(f'{self.title} 生成思维导图...')
+        mind_map = DeepSeek().get_mind_map(self.abstract)
+        self.mind_map = mind_map
+        self.save()
+        print(f'{self.title} 思维导图生成完成')
+        return mind_map

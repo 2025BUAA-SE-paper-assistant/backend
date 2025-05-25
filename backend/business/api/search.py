@@ -736,7 +736,7 @@ def process_keyword(keyword):
 
 def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=False,authors="",startTime=None,endTime=None,tags=None):
     vector_filtered_papers = get_filtered_paper(
-        search_content, k=10, threshold=0.3,authors=authors,startTime=startTime,endTime=endTime,tags=tags
+        search_content, k=20, threshold=0.3,authors=authors,startTime=startTime,endTime=endTime,tags=tags
     )  # 这是新版的调用服务器模型的接口
     print(f'vector len:{len(vector_filtered_papers)}')
     # 进行二次关键词检索
@@ -770,8 +770,8 @@ def do_dialogue_search(search_content, chat_chat_url, headers, setting_cache=Fal
     keyword_filtered_papers = search_papers_by_keywords(keywords=keywords,authors=authors,startTime=startTime,endTime=endTime,tags=tags)
     if not setting_cache: # 非个性化搜索时更新搜索词统计
         update_wordcnt(keywords)
-    if len(keyword_filtered_papers) > 5:
-        keyword_filtered_papers = keyword_filtered_papers[:5]
+    if len(keyword_filtered_papers) > 10:
+        keyword_filtered_papers = keyword_filtered_papers[:10]
 
     s1 = set(vector_filtered_papers)
     s2 = set(keyword_filtered_papers)
@@ -1251,7 +1251,7 @@ def dialog_query(request):
         # for paper in filtered_paper:
         #     papers.append(paper)
         # print(papers)
-        content = "根据您的需求，我们检索到了一些论文信息"
+        content = "根据您的需求，我们检索到了一些论文信息，见下方蓝色论文卡片"
         # for i in range(len(papers)):
         #     content + '\n' + f'第{i}篇：'
         #     # TODO: 这里需要把papers的信息整理到content里面
@@ -1267,7 +1267,7 @@ def dialog_query(request):
             #     back_papers.append(paper.to_dict())
             # print(back_papers)
             # content += "同时，我们针对该研究背景检索到了一些论文信息作为补充"
-            content_add = "同时，我们针对该研究背景检索到了一些论文信息作为补充"
+            content_add = "同时，我们针对该研究背景检索到了一些论文信息作为补充，见下方绿色论文卡片"
             # for i in range(len(filtered_papers)):
             #     content + '\n' + f'第{i}篇：'
             #     # TODO: 这里需要把papers的信息整理到content里面
@@ -1316,9 +1316,14 @@ def dialog_query(request):
     ret_papers = []
     for paper in papers:
         ret_papers.append(paper.to_dict())
+    s2 = set(papers)
+    s1 = set(papers_add)
+    papers_add = list(s1.difference(s2))    
     ret_papers_add = []
     for paper in papers_add:
         ret_papers_add.append(paper.to_dict())
+    if ret_papers_add:
+        content = content + '；' + content_add
     res = {"dialog_type": dialog_type, "papers": ret_papers, "content": content,
            'papers_add':ret_papers_add, 'content_add':content_add}
     return reply.success(res, msg="成功返回对话")

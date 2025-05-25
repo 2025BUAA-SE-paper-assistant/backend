@@ -452,19 +452,6 @@ def get_paper_local_url(paper):
     local_pdf = paper.local_path
     max_retries = 3
     retries = 0
-    # if not local_path:
-    #     original_url = paper.original_url
-    #     # 将路径中的abs修改为pdf
-    #     original_url = original_url.replace("abs", "pdf")
-    #     # 访问url，下载文献到服务器
-    #     filename = str(paper.paper_id)
-        # local_path = downloadPaper(original_url, filename)
-    #     if local_path is None:
-    #         return None
-    #     paper.refresh_from_db()
-    #     paper.local_path = local_path
-    #     paper.save()
-    # return local_path
     while retries < max_retries:
         if local_pdf and os.path.exists(local_pdf):
             # 检查 PDF 文件是否损坏
@@ -575,6 +562,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                     "top_k": 10,
                     "stream": True,
                 }
+
             )
         else:
             payload = json.dumps(
@@ -625,7 +613,8 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
             # 调用原生大模型
             if has_history:
                 data_1 = {
-                    "query": query,
+
+                    "query": f"{query_1}",
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
                     "stream": True,
@@ -636,8 +625,9 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                     "top_k": 10,
                 }
             else:
-                data_1 = {
-                    "query": query,
+
+              data_1 = {
+                    "query": f"{query_1}",
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
                     "stream": True,
@@ -705,9 +695,10 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
             # 调用科研模型
             ai_reply_3 = ""
             origin_docs_3 = []
+
             if need_3:
                 data_3 = {
-                    "query": query,
+                    "query": f"{query_3}",
                     "knowledge_base_name": "Paper_all_in_one",
                     "temperature": 0.7,
                     "model_name": "chatglm3-6b",
@@ -809,6 +800,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
             question_reply = re.findall(r'"prediction_\d+":\s*"([^"]+)"', question_response)
             question_reply = question_reply[:2]
             question_reply.append("针对上一个问题做更详细的回复")
+
 
             # 最终返回推荐问题
             yield {'type': 'questions', 'content': question_reply}
