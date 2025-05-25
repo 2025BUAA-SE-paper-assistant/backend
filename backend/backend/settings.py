@@ -15,7 +15,7 @@ from pathlib import Path
 from datetime import timedelta
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path("/usr/zjq/backend/backend/backend/settings.py").resolve().parent.parent
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/4.2/howto/deployment/checklist/
@@ -27,6 +27,10 @@ SECRET_KEY = "django-insecure-@pywj-yjew^uh$e(dzt5t4+rq27vwp@k4q@#x&+icla+ppvu^x
 DEBUG = True
 
 ALLOWED_HOSTS = ["*"]
+
+os.environ["DJANGO_ALLOW_ASYNC_UNSAFE"] = "true"
+
+DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10MB
 
 # Application definition
 
@@ -55,7 +59,7 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "business.middleware.exception_middleware.ExceptionMiddleware",  # 添加异常处理中间件
+    # "business.middleware.exception_middleware.ExceptionMiddleware",  # 添加异常处理中间件
 ]
 
 # 设置跨域SESSION配置，本地测试时需要SESSION_COOKIE_SECURE = False

@@ -5,7 +5,9 @@ api/peper_interpret/...
 """
 
 import asyncio
+import datetime
 import json, ast
+import logging
 import os
 import re
 from urllib.parse import quote
@@ -17,6 +19,12 @@ from business.models import UserDocument, FileReading, Paper, User
 from business.utils import reply
 
 from business.utils.download_paper import downloadPaper
+
+import asyncio
+import aiohttp
+import json
+import re
+from django.http import StreamingHttpResponse
 
 # 论文研读模块
 
@@ -413,7 +421,7 @@ def is_pdf_corrupted(file_path,paper):
         #     reader = PdfReader(f)
             # 如果能够成功读取页面数量而不抛出异常，则文件可能正常
             # num_pages = len(reader.pages)
-        
+
         # 未解析段落分块
         if not paper.paragraph:
             paragrahs = []
@@ -532,398 +540,339 @@ def check_all_pdfs(request):
     return reply.success(data={'bad_papers':paper_not_well})
 
 
-def do_file_chat(conversation_history, query, tmp_kb_id):
-    # 将历史记录与本次对话发送给服务器, 获取对话结果
+
+
+async def do_file_chat(conversation_history, query, tmp_kb_id):
+    """
+    处理文件聊天请求，流式返回AI回答、引用文档和推荐问题
+    """
+    # 构建请求URL和头部
     file_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/file_chat"
     knowledge_base_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/knowledge_base_chat"
     search_engine_chat_url = f"http://{settings.REMOTE_MODEL_BASE_PATH}/chat/search_engine_chat"
     headers = {"Content-Type": "application/json"}
-    has_history = False
-    if len(conversation_history) != 0:
-        # 有问题
-        has_history = True
-        payload = json.dumps(
-            {
-                "query": query,
-                "knowledge_id": tmp_kb_id,
-                "history": conversation_history[-10:],  # 传10条历史记录
-#                 "stream": True,
-#                 "prompt_name": "literature_research_agent",  # 使用历史记录对话模式
 
+    # 定义流式处理的生成器
+    async def stream_generator():
+        # 初始化变量
+        ai_reply = ""
+        origin_docs = []
+        question_reply = []
 
-                "prompt_name": "text_new",  # 使用历史记录对话模式
-                "max_tokens": 2048,
-                "top_k": 10,
-            }
-        )
+        # 判断是否有历史对话
+        has_history = len(conversation_history) != 0
+        print (f"time: {datetime.datetime.now()}")
 
-    else:
-        payload = json.dumps(
-            {
-                "query": query,
-                "knowledge_id": tmp_kb_id,
-                "prompt_name": "default",  # 使用普通对话模式
-                "max_tokens": 2048,
-                "top_k": 10,
-            }
-        )
-        # print(payload)
-
-    def _get_ai_reply_multi(payload, has_history):
-        need_2 = False
-        need_3 = False
-        # 先判断需不需要分发任务
-        data_0 = {
-            "query": query,
-            "temperature": 0.3,
-            "stream": False,
-            "model_name": "chatglm3-6b",
-            "prompt_name": "ai_expert_grok3",
-        }
-        payload_0 = json.dumps(data_0)
-        response = requests.request(
-            "POST", settings.CHAT_CHAT_URL, data=payload_0, headers=headers, stream=False
-        )
-        ans = ""
-        for line in response.iter_lines():
-            decoded_line = line.decode('utf-8')
-            if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
-                continue
-        
-            if decoded_line.startswith('data'):
-                data = json.loads(decoded_line.replace('data: ', ''))
-                ans += data['text']
-        ans_json = ans.replace('\n', '')
-        json_data = json.loads(ans_json)
-        # need_1 = json_data.get("原生大模型")
-        need_2 = json_data.get("搜索引擎专家大模型")
-        need_3 = json_data.get("科研大模型")
-        print("搜索：", need_2)
-        print("科研：", need_3)
-        # 再分发任务
-        if need_2 == False and need_3 == False :
-            response = requests.request(
-                "POST", file_chat_url, data=payload, headers=headers, stream=False
-            )
-            ai_reply = ""
-            origin_docs = []
-            # print(response)
-            for line in response.iter_lines():
-                if line:
-                    decoded_line = line.decode('utf-8')
-                    if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
-                        continue
-                    if decoded_line.startswith('data'):
-                        data = decoded_line.replace('data: ', '')
-                        data = json.loads(data)
-                        if "answer" in data:
-                            ai_reply += data["answer"]
-                        if "docs" in data:
-                            for doc in data["docs"]:
-                                doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
-                                origin_docs.append(doc)
-        else :
-            data = {
-                "query": query,
-                "temperature": 0.3,
-                "stream": False,
-                "model_name": "chatglm3-6b",
-                "knowledge_id": tmp_kb_id,
-                "prompt_name": "ai_expert_chain",
-            }
-            payload_1 = json.dumps(data)
-            response = requests.request(
-                "POST", file_chat_url, data=payload_1, headers=headers, stream=False
-            )
-            ans = ""
-            for line in response.iter_lines():
-                if line:
-                    decoded_line = line.decode('utf-8')
-                    if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
-                        continue
-                    if decoded_line.startswith('data'):
-                        data = decoded_line.replace('data: ', '')
-                        data = json.loads(data)
-                        if "answer" in data:
-                            ans += data["answer"]
-            print("分发成功：",ans)
-            datas = None
-            try:
-                datas = json.loads(ans)
-                prompts = {}
-
-                # 遍历并检查类型
-                for model, details in data.items():
-                    if isinstance(details, dict):
-                        prompts[model] = details.get("prompt", "")
-                    else:
-                        print(f"配置项 '{model}' 数据类型异常: {type(details)}")
-
-                # 打印结果
-                for model, prompt in prompts.items():
-                    print(f"模型: {model}")
-                    print(f"Prompt:\n{prompt}\n{'-'*30}")
-
-            except json.JSONDecodeError as e:
-                print(f"JSON解析失败: {e}")
-            query_1 = ""
-            query_2 = ""
-            query_3 = ""
-            for model_name, model_info in datas.items():
-                if model_name == "原生大模型":
-                    query_1 = model_info['prompt']
-                if model_name == "搜索引擎专家大模型" :
-                    query_2 = model_info['prompt']
-                if model_name == "科研大模型" :
-                    query_3 = model_info['prompt']
-
-            # 调用原生大模型
-            if(has_history) :
-                data_1 = {
-                # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
-                    "query": f"{query_1}",
+        # 构建请求载荷
+        if has_history:
+            payload = json.dumps(
+                {
+                    "query": query,
                     "knowledge_id": tmp_kb_id,
-                    "temperature": 0.3,
-                    "stream": False,
-                    "model_name": "chatglm3-6b",
                     "history": conversation_history[-10:],  # 传10条历史记录
                     "prompt_name": "text_new",  # 使用历史记录对话模式
                     "max_tokens": 2048,
                     "top_k": 10,
+                    "stream": True,
                 }
-            else:
-              data_1 = {
-                # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
-                    "query": f"{query_1}",
+            )
+        else:
+            payload = json.dumps(
+                {
+                    "query": query,
+                    "knowledge_id": tmp_kb_id,
+                    "prompt_name": "default",  # 使用普通对话模式
+                    "max_tokens": 2048,
+                    "top_k": 10,
+                    "stream": True,
+                }
+            )
+
+        # 判断是否需要分发任务
+        async def need_distribution():
+            data_0 = {
+                "query": query,
+                "temperature": 0.3,
+                "stream": True,
+                "model_name": "chatglm3-6b",
+                "prompt_name": "ai_expert_grok3",
+
+            }
+            payload_0 = json.dumps(data_0)
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(settings.CHAT_CHAT_URL, data=payload_0, headers=headers) as response:
+                    ans = ""
+                    async for line in response.content:
+                        decoded_line = line.decode('utf-8').strip()
+                        if decoded_line.startswith(': ping'):
+                            continue
+                        if decoded_line.startswith('data'):
+                            data = json.loads(decoded_line.replace('data: ', ''))
+                            ans += data['text']
+
+            try:
+                ans_json = ans.replace('\n', '')
+                json_data = json.loads(ans_json)
+                need_2 = json_data.get("搜索引擎专家大模型")
+                need_3 = json_data.get("科研大模型")
+                return need_2, need_3
+            except json.JSONDecodeError:
+                return False, False
+
+        # 处理多模型调用
+        async def process_multi_models(need_2, need_3):
+            # 调用原生大模型
+            if has_history:
+                data_1 = {
+                    "query": query,
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
-                    "stream": False,
+                    "stream": True,
                     "model_name": "chatglm3-6b",
-                    # "history": conversation_history[-10:],  # 传10条历史记录
-                    "prompt_name": "text_new",  # 使用历史记录对话模式
+                    "history": conversation_history[-10:],
+                    "prompt_name": "text_new",
+                    "max_tokens": 2048,
+                    "top_k": 10,
+                }
+            else:
+                data_1 = {
+                    "query": query,
+                    "knowledge_id": tmp_kb_id,
+                    "temperature": 0.3,
+                    "stream": True,
+                    "model_name": "chatglm3-6b",
+                    "prompt_name": "text_new",
                     "max_tokens": 2048,
                     "top_k": 10,
                 }
 
-            try:
+            # 获取原生大模型回答
+            async with aiohttp.ClientSession() as session:
                 payload_2 = json.dumps(data_1)
-            except TypeError as e:
-                print(f"JSON序列化失败: {e}")
+                async with session.post(file_chat_url, data=payload_2, headers=headers) as response:
+                    ai_reply_1 = ""
+                    origin_docs_1 = []
+                    async for line in response.content:
+                        decoded_line = line.decode('utf-8').strip()
+                        if decoded_line.startswith(': ping'):
+                            continue
+                        if decoded_line.startswith('data'):
+                            data = json.loads(decoded_line.replace('data: ', ''))
+                            if "answer" in data:
+                                ai_reply_1 += data["answer"]
+                                # 流式返回原生大模型的部分回答
+                                yield {'type': 'answer', 'content': data["answer"], 'source': 'base_model'}
+                            if "docs" in data:
+                                for doc in data["docs"]:
+                                    doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                                    origin_docs_1.append(doc)
+                                    # yield {'type': 'doc', 'content': doc, 'source': 'base_model'}
 
-            response = requests.request(
-                "POST", file_chat_url, data=payload_2, headers=headers, stream=False
-            )
-            ai_reply_1 = ""
-            origin_docs_1 = []
-            # print(response)
-            for line in response.iter_lines():
-                if line:
-                    decoded_line = line.decode('utf-8')
-                    if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
-                        continue
-                    if decoded_line.startswith('data'):
-                        data = decoded_line.replace('data: ', '')
-                        data = json.loads(data)
-                        if "answer" in data:
-                            ai_reply_1 += data["answer"]
-                        if "docs" in data:
-                            for doc in data["docs"]:
-                                doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
-                                origin_docs_1.append(doc)
-
-            # print("原生：",ai_reply_1)
-
-            #再调用搜索引擎
+            # 调用搜索引擎
             ai_reply_2 = ""
             origin_docs_2 = []
             if need_2:
                 data_2 = {
-                    "query": query_2, # 原文
-                    "temperature": 0.7, # temp
+                    "query": query,
+                    "temperature": 0.7,
                     "top_k": 10,
-                    "stream": False, 
                     "max_tokens": 2048,
                     "search_engine_name": "bing",
-                    "model_name": "chatglm3-6b", # 模型
-                    "prompt_name": "search", # prompt类型，这个有没有都可以
+                    "model_name": "chatglm3-6b",
+                    "prompt_name": "search",
+                    "stream": True,
                 }
 
-                payload_3 = json.dumps(data_2)
-                response = requests.request(
-                    "POST", search_engine_chat_url, data=payload_3, headers=headers, stream=False
-                )
+                async with aiohttp.ClientSession() as session:
+                    payload_3 = json.dumps(data_2)
+                    async with session.post(search_engine_chat_url, data=payload_3, headers=headers) as response:
+                        async for line in response.content:
+                            decoded_line = line.decode('utf-8').strip()
+                            if decoded_line.startswith(': ping'):
+                                continue
+                            if decoded_line.startswith('data'):
+                                data = json.loads(decoded_line.replace('data: ', ''))
+                                if "answer" in data:
+                                    ai_reply_2 += data["answer"]
+                                    yield {'type': 'answer', 'content': data["answer"], 'source': 'search_engine'}
+                                if "docs" in data:
+                                    for doc in data["docs"]:
+                                        doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                                        origin_docs_2.append(doc)
+                                        # yield {'type': 'doc', 'content': doc, 'source': 'search_engine'}
 
-
-                for line in response.iter_lines():
-                    if line:
-                        decoded_line = line.decode('utf-8')
-                        if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
-                            continue
-                        if decoded_line.startswith('data'):
-                            data = decoded_line.replace('data: ', '')
-                            data = json.loads(data)
-                            if "answer" in data:
-                                ai_reply_2 += data["answer"]
-                                # print(data["answer"])
-                            if "docs" in data:
-                                for doc in data["docs"]:
-                                    doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
-                                    origin_docs_2.append(doc)
-
-            # print("搜索：", ai_reply_2)
-
+            # 调用科研模型
             ai_reply_3 = ""
             origin_docs_3 = []
-            
             if need_3:
                 data_3 = {
-                    # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
-                    "query": f"{query_3}",
+                    "query": query,
                     "knowledge_base_name": "Paper_all_in_one",
                     "temperature": 0.7,
-                    "stream": False,
                     "model_name": "chatglm3-6b",
                     "prompt_name": "literature_research_agent",
                     "max_tokens": 4096,
                     "top_k": 10,
+                    "stream": True,
                 }
 
-                payload_4 = json.dumps(data_3)
-                response = requests.request(
-                    "POST", knowledge_base_chat_url, data=payload_4, headers=headers, stream=False
-                )
+                async with aiohttp.ClientSession() as session:
+                    payload_4 = json.dumps(data_3)
+                    async with session.post(knowledge_base_chat_url, data=payload_4, headers=headers) as response:
+                        async for line in response.content:
+                            decoded_line = line.decode('utf-8').strip()
+                            if decoded_line.startswith(': ping'):
+                                continue
+                            if decoded_line.startswith('data'):
+                                data = json.loads(decoded_line.replace('data: ', ''))
+                                if "answer" in data:
+                                    ai_reply_3 += data["answer"]
+                                    yield {'type': 'answer', 'content': data["answer"], 'source': 'research_model'}
+                                if "docs" in data:
+                                    for doc in data["docs"]:
+                                        doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                                        origin_docs_3.append(doc)
+                                        # yield {'type': 'doc', 'content': doc, 'source': 'research_model'}
 
-                # print(response)
-                for line in response.iter_lines():
-                    if line:
-                        decoded_line = line.decode('utf-8')
-                        if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
-                            continue
-                        if decoded_line.startswith('data'):
-                            data = decoded_line.replace('data: ', '')
-                            data = json.loads(data)
-                            if "answer" in data:
-                                ai_reply_3 += data["answer"]
-                            if "docs" in data:
-                                for doc in data["docs"]:
-                                    doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
-                                    origin_docs_3.append(doc)
-            # print("科研：", ai_reply_3)
-
-            if(has_history) :
+            # 整合多个模型的回答
+            if has_history:
                 data_4 = {
-                    # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
                     "query": f"原生模型输出：{ai_reply_1}\n搜索引擎输出:{ai_reply_2}\n科研模型输出:{ai_reply_3}\n",
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
-                    "stream": False,
                     "model_name": "chatglm3-6b",
                     "prompt_name": "agent_integration",
                     "history": conversation_history[-10:],
                     "max_tokens": 4096,
                     "top_k": 10,
+                    "stream": True,
                 }
-            else :
+            else:
                 data_4 = {
-                    # "query": "请以专业学术翻译员的身份，严格遵循以下要求将论文2024-CVPR-Rich Human Feedback for Text-to-Image Generation.pdf 的Abstract部分翻译为中文：\n1. **术语精准性**：技术术语须采用《计算机视觉与模式识别领域中文术语规范（2023版）》标准译法，如\"diffusion model\"统一译为\"扩散模型\"，\"human feedback\"译为\"人类反馈\"，未列明术语需结合上下文推导\n2. **句式结构化**：保留原文的学术表达结构，特别是方法描述（\"we propose...\"→\"本文提出...\"）、实验结论（\"demonstrate\"→\"实验证明\"）等关键句式\n3. **学术规范性**：\n- 括号引用保持[1]格式不转换\n- 数学符号保持原格式\n- 专有名词如AdamW不翻译\n- 计量单位保留原文格式（如256×256）\n4. **可逆性要求**：翻译后的中文需确保可通过反向翻译完整还原原文技术细节\n5. **分段处理**：请对以下文本进行逐句翻译，用||分隔原文与译文：\n特别处理以下易错点：\n- \"feedback loop\" → 根据语境选择\"反馈循环\"（系统结构）或\"反馈回路\"（算法流程）\n- \"reward modeling\" → 奖励建模（不译作\"报酬模型\"）\n- 出现\"CLIP\"时需保留大写不翻译 -字数不少于1000字",
                     "query": f"原生模型输出：{ai_reply_1}\n搜索引擎输出:{ai_reply_2}\n科研模型输出:{ai_reply_3}\n",
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
-                    "stream": False,
                     "model_name": "chatglm3-6b",
                     "prompt_name": "agent_integration",
-                    # "history": conversation_history[-10:],
                     "max_tokens": 4096,
                     "top_k": 10,
+                    "stream": True,
                 }
 
-            payload_5 = json.dumps(data_4)
-
-            response = requests.request(
-                "POST", file_chat_url, data=payload_5, headers=headers, stream=False
-            )
-
+            # 获取整合后的最终回答
             ai_reply = ""
             origin_docs = []
-            # print(response)
-            for line in response.iter_lines():
-                if line:
-                    decoded_line = line.decode('utf-8')
-                    if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
-                        continue
-                    if decoded_line.startswith('data'):
-                        data = decoded_line.replace('data: ', '')
-                        data = json.loads(data)
-                        if "answer" in data:
-                            ai_reply += data["answer"]
-                        if "docs" in data:
-                            for doc in data["docs"]:
-                                doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
-                                origin_docs.append(doc)
-        # print("最终输出：",ai_reply)                        
-        return ai_reply, origin_docs
-    
-    def _get_ai_reply(payload):
-        response = requests.request(
-            "POST", file_chat_url, data=payload, headers=headers, stream=False
-        )
-        ai_reply = ""
-        origin_docs = []
-        # print(response)
-        for line in response.iter_lines():
-            if line:
-                decoded_line = line.decode('utf-8')
-                if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
-                    continue
-                if decoded_line.startswith('data'):
-                    data = decoded_line.replace('data: ', '')
-                    data = json.loads(data)
-                    if "answer" in data:
-                        ai_reply += data["answer"]
-                    if "docs" in data:
-                        for doc in data["docs"]:
-                            doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
-                            origin_docs.append(doc)
-        # print("最终输出：",ai_reply)
-        return ai_reply, origin_docs
 
-    # task = asyncio.create_task(_get_ai_reply())  # 创建任务
-    # ai_reply, origin_docs = _get_ai_reply(payload)
-    ai_reply, origin_docs = _get_ai_reply_multi(payload, has_history)
-    # 给出用户仍可能存在的问题
-    def _get_prob_paper_study_question():
 
-        # empty模板不含任何知识库信息
-        # payload = json.dumps(
-        #     {
-        #         "query": query,
-        #         "knowledge_id": tmp_kb_id,
-        #         "history": conversation_history[-4:],
-        #         "prompt_name": "question",  # 使用问题模式
-        #         "max_tokens": 50,
-        #         "temperature": 0.4,
-        #     }
-        # )
-        payload = json.dumps(
-            {
-                "query": f"问题：{query}\n 回复：{ai_reply}",
-                "knowledge_id": tmp_kb_id,
-                "history": conversation_history[-4:],
-                "prompt_name": "literature_research_assistant",  # 使用问题模式
-                # "max_tokens": 50,
-                "temperature": 0.4,
-            }
-        )
-        question_reply, _ = _get_ai_reply(payload)
-        # print(question_reply)
-        question_reply = re.findall(r'"prediction_\d+":\s*"([^"]+)"', question_reply)
-        # print(question_reply)
-        question_reply = question_reply[:2]
-        question_reply.append("针对上一个问题做更详细的回复")
-        return question_reply
+            async with aiohttp.ClientSession() as session:
+                payload_5 = json.dumps(data_4)
+                async with session.post(file_chat_url, data=payload_5, headers=headers) as response:
+                    async for line in response.content:
+                        decoded_line = line.decode('utf-8').strip()
+                        if decoded_line.startswith(': ping'):
+                            continue
+                        if decoded_line.startswith('data'):
+                            data = json.loads(decoded_line.replace('data: ', ''))
+                            if "answer" in data:
+                                ai_reply += data["answer"]
+                                yield {'type': 'answer', 'content': data["answer"], 'source': 'final'}
+                            if "docs" in data:
+                                for doc in data["docs"]:
+                                    doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                                    origin_docs.append(doc)
+                                    yield {'type': 'doc', 'content': doc, 'source': 'final'}
 
-    question_reply = _get_prob_paper_study_question()
-    return ai_reply, origin_docs, question_reply
+            # 获取推荐问题
+            payload = json.dumps(
+                {
+                    "query": f"问题：{query}\n 回复：{ai_reply}",
+                    "knowledge_id": tmp_kb_id,
+                    "history": conversation_history[-4:],
+                    "prompt_name": "literature_research_assistant",
+                    "temperature": 0.4,
+                    "stream": True,
+                }
+            )
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(file_chat_url, data=payload, headers=headers) as response:
+                    question_response = ""
+                    async for line in response.content:
+                        decoded_line = line.decode('utf-8').strip()
+                        if decoded_line.startswith(': ping'):
+                            continue
+                        if decoded_line.startswith('data'):
+                            data = json.loads(decoded_line.replace('data: ', ''))
+                            question_response += data.get("answer", "")
+
+            question_reply = re.findall(r'"prediction_\d+":\s*"([^"]+)"', question_response)
+            question_reply = question_reply[:2]
+            question_reply.append("针对上一个问题做更详细的回复")
+
+            # 最终返回推荐问题
+            yield {'type': 'questions', 'content': question_reply}
+
+        # 决定是否需要多模型处理
+        need_2, need_3 = await need_distribution()
+
+        if need_2 or need_3:
+            # 多模型处理
+            async for chunk in process_multi_models(need_2, need_3):
+                yield chunk
+        else:
+            # 单模型处理
+            async with aiohttp.ClientSession() as session:
+                async with session.post(file_chat_url, data=payload, headers=headers) as response:
+                    async for line in response.content:
+                        decoded_line = line.decode('utf-8').strip()
+                        if decoded_line.startswith(': ping'):
+                            continue
+                        if decoded_line.startswith('data'):
+                            data = json.loads(decoded_line.replace('data: ', ''))
+                            if "answer" in data:
+                                ai_reply += data["answer"]
+                                yield {'type': 'answer', 'content': data["answer"], 'source': 'single'}
+                            if "docs" in data:
+                                for doc in data["docs"]:
+                                    doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                                    origin_docs.append(doc)
+                                    yield {'type': 'doc', 'content': doc, 'source': 'single'}
+
+            # 获取推荐问题
+            payload = json.dumps(
+                {
+                    "query": f"问题：{query}\n 回复：{ai_reply}",
+                    "knowledge_id": tmp_kb_id,
+                    "history": conversation_history[-4:],
+                    "prompt_name": "literature_research_assistant",
+                    "temperature": 0.4,
+                    "stream": True,
+                }
+            )
+
+            async with aiohttp.ClientSession() as session:
+                async with session.post(file_chat_url, data=payload, headers=headers) as response:
+                    question_response = ""
+                    async for line in response.content:
+                        decoded_line = line.decode('utf-8').strip()
+                        if decoded_line.startswith(': ping'):
+                            continue
+                        if decoded_line.startswith('data'):
+                            data = json.loads(decoded_line.replace('data: ', ''))
+                            question_response += data.get("answer", "")
+
+            question_reply = re.findall(r'"prediction_\d+":\s*"([^"]+)"', question_response)
+            question_reply = question_reply[:2]
+            question_reply.append("针对上一个问题做更详细的回复")
+
+            # 最终返回推荐问题
+            yield {'type': 'questions', 'content': question_reply, 'source': 'final'}
+
+            yield {'type': 'end', 'content': "对话结束"}
+
+    # 返回生成器
+    return stream_generator()
 
 
 def add_conversation_history(conversation_history, query, ai_reply, conversation_path):
@@ -948,12 +897,11 @@ def add_conversation_history(conversation_history, query, ai_reply, conversation
 
 from business.utils.activity import update_user_activity
 from django.http import StreamingHttpResponse
-@require_http_methods(["POST"])
-def do_paper_study(request):
+async def do_paper_study(request) -> StreamingHttpResponse:
     # 鉴权
     username = request.session.get("username")
     if username is None:
-        username = "sanyuba"
+        username = "zjq"
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
@@ -978,45 +926,52 @@ def do_paper_study(request):
         conversation_history = json.load(f)
 
     # print(tmp_kb_id)
-    conversation_history = list(conversation_history.get("conversation"))  # List[Dict]
-    # print(conversation_history, query, tmp_kb_id)
-    ai_reply, origin_docs, question_reply = do_file_chat(
-        conversation_history, query, tmp_kb_id
-    )
+    conversation_history = list(conversation_history.get("conversation"))
+    print (f"time_start: {datetime.datetime.now()}")
 
-#     # 收集完整回复用于保存历史记录
-#     full_reply = ""
-#     origin_docs = []
+    # 获取流式生成器
+    stream_generator = await do_file_chat(conversation_history, query, tmp_kb_id)
 
-#     async def generate_response():
-#         nonlocal full_reply, origin_docs
-#         async for chunk in stream_generator:
-#             if chunk["type"] == "answer":
-#                 full_reply += chunk["content"]
-#                 yield f"data: {json.dumps({'answer': chunk['content']})}\n\n"
-#             elif chunk["type"] == "doc":
-#                 origin_docs.append(chunk["content"])
-#                 yield f"data: {json.dumps({'doc': chunk['content']})}\n\n"
-#             elif chunk["type"] == "complete":
-#                 # 流式传输完成后保存历史记录
-#                 add_conversation_history(
-#                     conversation_history, query, full_reply, fr.conversation_path
-#                 )
-#                 yield f'''data: {json.dumps({
-#                     'complete': True,
-#                     'prob_question': question_reply
-#                 })}\n\n'''
+    # 创建流式响应
+    async def event_stream():
+        async for chunk in stream_generator:
+            if chunk['type'] == 'answer':
+                yield json.dumps({
+                    "type": "answer",
+                    "content": chunk['content'],
+                    "source": chunk.get('source', 'base_model'),
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }) +"\n"
+            elif chunk['type'] == 'doc':
+                yield json.dumps({
+                    "type": "doc",
+                    "content": chunk['content'],
+                    "source": chunk.get('source', 'base_model'),
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }) + "\n"
+            elif chunk['type'] == 'questions':
+                yield json.dumps({
+                    "type": "questions",
+                    "content": chunk['content'],
+                    "source": chunk.get('source', 'base_model'),
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }) + "\n"
+            elif chunk['type'] == 'end':
+                yield json.dumps({
+                    "type": "end",
+                    "content": "对话结束",
+                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }) + "\n"
 
-#     response = StreamingHttpResponse(
-#         generate_response(),
-#         content_type="text/event-stream"
-    add_conversation_history(
-        conversation_history, query, ai_reply, fr.conversation_path
-    )
-    return reply.success(
-        {"ai_reply": ai_reply, "docs": origin_docs, "prob_question": question_reply},
-        msg="成功",
-    )
+                
+        yield json.dumps({
+            "type": "final_end",
+            "content": "会话已完成",
+            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }) + "\n"
+
+    # 返回StreamingHttpResponse对象
+    return StreamingHttpResponse( event_stream(), content_type='text/event-stream')
 
 
 """
@@ -1065,55 +1020,6 @@ def re_do_paper_study(request):
         msg="成功",
     )
 
-
-# @require_http_methods(["POST"])
-# def paper_interpret(request):
-#     # mark:已被放弃
-#     '''
-#     本文件唯一的接口，类型为POST
-#     根据用户的问题，返回一个回答
-#     思路如下：
-#         1. 根据session获得用户的username, request中包含local_path和question
-#         2. 根据paper_id得到向量库中各段落的向量，根据question得到问题的向量，选择最相似的段落
-#         3. 将段落输入到ChatGLM2-6B中，得到回答，进行总结，给出一个本文中的回答
-#         4. 查找与其相似度最高的几篇文章的段落，相似度最高的5个段落，对每段给出一个简单的总结。
-#         5. 将几个总结和回答拼接返回
-#         6. 把聊天记录保存到数据库中，见backend/business/models/file_reading.py
-#     return : {
-#         content: str
-#     }
-#     '''
-#     if request.method == 'POST':
-#         data = json.loads(request.body)
-#         local_path = data['local_path']
-#         question = data['question']
-#         username = request.session.get('username')
-#         user = User.objects.get(username=username)
-#         file = FileReading.objects.get(user_id=user, file_local_path=local_path)
-#         conversation = []
-#         conversation_path = ''
-#         if file is None:
-#             # 新建一个研读记录
-#             t = get_pdf_title(local_path)
-#             file = FileReading(user_id=user.user_id, file_local_path=local_path, title=t, conversation_path=None)
-#             file.conversation_path = f'{USER_READ_CONSERVATION_PATH}/{file.user_id.id}_{file.title}.txt'
-#             conversation_path = file.conversation_path
-#             file.save()
-#         else:
-#             conversation_path = file.conversation_path
-#             with open(conversation_path, 'r') as f:
-#                 conversation = json.load(f)
-#         conversation.append({'role': 'user', 'content': question})
-#         # 从数据库中找到最相似的段落
-#
-#             # print(f"Received data (Client ID {client_id}): {data}")
-#         elif decoded_line.startswith('event'):
-#             event_type = decoded_line.replace('event: ', '')
-#             # print(f"Event type: {event_type}")
-#     finally:
-#         response.close()
-#     # print(response)  # 目前不清楚是何种返回 TODO:
-#     return reply.success({"ai_reply": ai_reply, "docs": origin_docs}, msg="成功")
 @require_http_methods(["POST"])
 def clear_conversation(request):
     # 鉴权

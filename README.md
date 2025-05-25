@@ -60,3 +60,6 @@ USE eppdb;
 mysql -u root -p eppdb < /root/nbackend/2024_EPP.sql
 
 set PYTHONPATH=E:\code\ruangong\backend\backend
+
+启动方式为
+uvicorn backend.asgi:application --host 0.0.0.0 --port 8011 --reload
