@@ -139,6 +139,7 @@ def get_filtered_paper(text, k, threshold=None,authors="",startTime=None,endTime
 
     embed_texts = embed(text)
     # print(embed_texts)
+    # 相似度降序
     distances, indices = index.search(np.array(embed_texts).astype(np.float32), k)
     i2d_dict = {}
     for d, i in zip(distances[0], indices[0]):
@@ -158,7 +159,8 @@ def get_filtered_paper(text, k, threshold=None,authors="",startTime=None,endTime
         tags_list = json.loads(tags)
         for tag in tags_list:
             result = result.filter(sub_classes__name__icontains=tag)  # 将标签过滤条件与其他条件结合
-    filtered_papers = result.all()
+    filtered_papers = list(result.all())
+    filtered_papers.sort(key=lambda x: paper_ids.index(x.paper_id))  # 按paper_ids顺序重排   
     ht_threshold_papers = []
     for p in filtered_papers:
         sim = i2d_dict[p.paper_id]
