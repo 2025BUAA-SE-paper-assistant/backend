@@ -65,7 +65,7 @@ class Paper(models.Model):
 
     def get_paper_id(self):
         return str(self.paper_id)
-    
+
     def get_like_count(self):
         return self.liked_by_users.count()
     def get_collect_count(self):
@@ -111,7 +111,7 @@ class Paper(models.Model):
         # else:
             # 调用DeepSeek的get_mind_map方法生成思维导图
         print(f'{self.title} 生成思维导图...')
-        mind_map = DeepSeek().get_mind_map(self.abstract)
+        mind_map = DeepSeek().get_mind_map(self.abstract_cn)
         self.mind_map = mind_map
         self.save()
         print(f'{self.title} 思维导图生成完成')

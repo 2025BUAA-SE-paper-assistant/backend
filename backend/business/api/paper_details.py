@@ -528,7 +528,7 @@ def get_paper_info(request):
                 "bibtex": paper.bibtex,
                 "is_success": True,
                 "paragraph": paper.paragraph,
-                "mind_map": paper.mind_map if paper.mind_map else paper.get_mind_map(),
+                "mind_map": paper.get_mind_map(),
             }
             return JsonResponse(response, status=200)
         else:
@@ -585,7 +585,7 @@ import re
 #     if not first_line_match:
 #         return ''
 #     first_line = first_line_match.group().strip()
-    
+
 #     # 尝试匹配被包裹的标题
 #     title_match = re.fullmatch(
 #         r'\s*(?:<[^>]+>|【[^】]*】|["“])\s*(.*?)\s*(?:<\/[^>]+>|】|["”])\s*',
