@@ -121,7 +121,7 @@ def get_summary(paper_ids, report_id, user):
             articles += f"Title_{i}: {p.title}\nAbstrastract_{i}: {p.abstract}"
             ret_content += f"《{p.title}》、"
             i = i + 1
-        ret_content = ret_content[:-2]
+        ret_content = ret_content[:-1]
         base_url = "http://10.2.16.28:2334/chat" #ai URL
         headers = {
             'Content-Type': 'application/json'
@@ -320,7 +320,7 @@ def get_summary(paper_ids, report_id, user):
         report.report_path = pdf_path
         report.status = SummaryReport.STATUS_COMPLETED
         report.save()
-        ret_content += "的综述报告生成完毕了！请前往“个人中心->综述报告”查看！"
+        ret_content += f"的综述报告生成完毕了！ 对应的id为{report.report_id}。请前往“个人中心->综述报告”查看！"
         notification = Notification(user_id = user,title='综述报告生成成功！',content=ret_content)
         notification.save()
         # os.remove(md_path)
