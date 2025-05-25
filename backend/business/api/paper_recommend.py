@@ -194,7 +194,7 @@ def refreshCache():
     cache.set("recommended_paper_ids", info, timeout=86400)
     logger.info(f"成功更新推荐缓存，推荐论文ID: {info}")
 
-
+import random
 from django.core.cache import cache
 
 
@@ -219,7 +219,9 @@ def get_recommendation(request):
     # 从数据库中获取所有 Paper 对象的 ID,选固定的
     # papers_ids = list(Paper.objects.values_list("paper_id", flat=True))[25:35]
     # papers = list(Paper.objects.filter(paper_id__in=papers_ids).values())
-    papers = list(Paper.objects.order_by('-read_count')[:10])
+    papers = list(Paper.objects.order_by('-read_count')[:70])
+    # 随机抽10篇
+    papers = random.sample(papers, min(10, len(papers)))
     ret_info = []
     for paper in papers:
         ret_info.append(paper.to_dict()) 
