@@ -562,7 +562,6 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                     "top_k": 10,
                     "stream": True,
                 }
-
             )
         else:
             payload = json.dumps(
@@ -613,8 +612,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
             # 调用原生大模型
             if has_history:
                 data_1 = {
-
-                    "query": f"{query_1}",
+                    "query": query,
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
                     "stream": True,
@@ -625,9 +623,8 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                     "top_k": 10,
                 }
             else:
-
-              data_1 = {
-                    "query": f"{query_1}",
+                data_1 = {
+                    "query": query,
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
                     "stream": True,
@@ -695,10 +692,9 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
             # 调用科研模型
             ai_reply_3 = ""
             origin_docs_3 = []
-
             if need_3:
                 data_3 = {
-                    "query": f"{query_3}",
+                    "query": query,
                     "knowledge_base_name": "Paper_all_in_one",
                     "temperature": 0.7,
                     "model_name": "chatglm3-6b",
@@ -800,7 +796,6 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
             question_reply = re.findall(r'"prediction_\d+":\s*"([^"]+)"', question_response)
             question_reply = question_reply[:2]
             question_reply.append("针对上一个问题做更详细的回复")
-
 
             # 最终返回推荐问题
             yield {'type': 'questions', 'content': question_reply}
@@ -955,7 +950,7 @@ async def do_paper_study(request) -> StreamingHttpResponse:
                     "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }) + "\n"
 
-                
+
         yield json.dumps({
             "type": "final_end",
             "content": "会话已完成",
