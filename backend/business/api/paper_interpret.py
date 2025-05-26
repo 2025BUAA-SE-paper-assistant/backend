@@ -609,10 +609,85 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
 
         # 处理多模型调用
         async def process_multi_models(need_2, need_3):
+            if need_2 == False and need_3 == False :
+                response = requests.request(
+                    "POST", file_chat_url, data=payload, headers=headers, stream=False
+                )
+                ai_reply = ""
+                origin_docs = []
+                # print(response)
+                for line in response.iter_lines():
+                    if line:
+                        decoded_line = line.decode('utf-8')
+                        if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                            continue
+                        if decoded_line.startswith('data'):
+                            data = decoded_line.replace('data: ', '')
+                            data = json.loads(data)
+                            if "answer" in data:
+                                ai_reply += data["answer"]
+                            if "docs" in data:
+                                for doc in data["docs"]:
+                                    doc = str(doc).replace("\n", " ").replace("<span style='color:red'>", "").replace("</span>", "")
+                                    origin_docs.append(doc)
+            else :
+                data = {
+                    "query": query,
+                    "temperature": 0.3,
+                    "stream": False,
+                    "model_name": "chatglm3-6b",
+                    "knowledge_id": tmp_kb_id,
+                    "prompt_name": "ai_expert_chain",
+                }
+                payload_1 = json.dumps(data)
+                response = requests.request(
+                    "POST", file_chat_url, data=payload_1, headers=headers, stream=False
+                )
+                ans = ""
+                for line in response.iter_lines():
+                    if line:
+                        decoded_line = line.decode('utf-8')
+                        if decoded_line.startswith(': ping'):  # 忽略以 ":" 开头的行
+                            continue
+                        if decoded_line.startswith('data'):
+                            data = decoded_line.replace('data: ', '')
+                            data = json.loads(data)
+                            if "answer" in data:
+                                ans += data["answer"]
+                print("分发成功：",ans)
+                datas = None
+                try:
+                    datas = json.loads(ans)
+                    prompts = {}
+
+                    # 遍历并检查类型
+                    for model, details in data.items():
+                        if isinstance(details, dict):
+                            prompts[model] = details.get("prompt", "")
+                        else:
+                            print(f"配置项 '{model}' 数据类型异常: {type(details)}")
+
+                    # 打印结果
+                    for model, prompt in prompts.items():
+                        print(f"模型: {model}")
+                        print(f"Prompt:\n{prompt}\n{'-'*30}")
+
+                except json.JSONDecodeError as e:
+                    print(f"JSON解析失败: {e}")
+                query_1 = ""
+                query_2 = ""
+                query_3 = ""
+                for model_name, model_info in datas.items():
+                    if model_name == "原生大模型":
+                        query_1 = model_info['prompt']
+                    if model_name == "搜索引擎专家大模型" :
+                        query_2 = model_info['prompt']
+                    if model_name == "科研大模型" :
+                        query_3 = model_info['prompt']
             # 调用原生大模型
             if has_history:
                 data_1 = {
-                    "query": query,
+                    "query": query_1,
                     "knowledge_id": tmp_kb_id,
                     "temperature": 0.3,
                     "stream": True,
@@ -656,12 +731,14 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                                     origin_docs_1.append(doc)
                                     # yield {'type': 'doc', 'content': doc, 'source': 'base_model'}
 
+
+
             # 调用搜索引擎
             ai_reply_2 = ""
             origin_docs_2 = []
             if need_2:
                 data_2 = {
-                    "query": query,
+                    "query": query_2,
                     "temperature": 0.7,
                     "top_k": 10,
                     "max_tokens": 2048,
@@ -694,7 +771,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
             origin_docs_3 = []
             if need_3:
                 data_3 = {
-                    "query": query,
+                    "query": query_3,
                     "knowledge_base_name": "Paper_all_in_one",
                     "temperature": 0.7,
                     "model_name": "chatglm3-6b",
