@@ -4,6 +4,7 @@
 from django.db import models
 import uuid
 
+from business.utils.mindmap import mermaid_to_image
 from business.utils.deep_translate import DeepSeek
 from business.utils import storage
 from .subclass import Subclass
@@ -53,6 +54,7 @@ class Paper(models.Model):
     paragraph = models.TextField(null=True)  # 段落信息，允许为空
     bibtex = models.TextField(null=True)  # bibtex信息，允许为空
     mind_map = models.TextField(null=True)  # 思维导图信息，允许为空
+    mind_map_path = models.CharField(max_length=255, null=True)  # 思维导图图片路径，允许为空
 
     def __str__(self):
         return self.title
@@ -106,13 +108,13 @@ class Paper(models.Model):
         return hash(self.paper_id)
 
     def get_mind_map(self):
-        # if self.mind_map:
-        #     return self.mind_map
-        # else:
-            # 调用DeepSeek的get_mind_map方法生成思维导图
         print(f'{self.title} 生成思维导图...')
-        mind_map = DeepSeek().get_mind_map(self.abstract_cn)
-        self.mind_map = mind_map
-        self.save()
-        print(f'{self.title} 思维导图生成完成')
-        return mind_map
+        if "zjq" in str(self.mind_map_path):
+            return
+        else:
+            mermaid = DeepSeek().get_mind_map(self.abstract)
+            mermain_path = mermaid_to_image(mermaid, f'/usr/zjq/backend/backend/resource/database/papers/mermaid/{self.paper_id}.png')
+            self.mind_map_path = mermain_path
+            self.mind_map = mermaid
+            self.save()
+

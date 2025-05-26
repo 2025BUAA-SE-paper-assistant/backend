@@ -506,6 +506,8 @@ def get_paper_info(request):
                     bibtex = response.text.strip()
                 paper.bibtex = bibtex
                 paper.save()
+
+            paper.get_mind_map()
             response = {
                 "message": "获取成功",
                 "paper_id": paper.paper_id,
@@ -528,7 +530,8 @@ def get_paper_info(request):
                 "bibtex": paper.bibtex,
                 "is_success": True,
                 "paragraph": paper.paragraph,
-                "mind_map": paper.get_mind_map(),
+                "mind_map":paper.mind_map,
+                "mind_map_path": paper.mind_map_path,
             }
             return JsonResponse(response, status=200)
         else:
