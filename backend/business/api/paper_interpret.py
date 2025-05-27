@@ -998,41 +998,48 @@ async def do_paper_study(request) -> StreamingHttpResponse:
 
     # 创建流式响应
     async def event_stream():
+        ai_reply = ""
         async for chunk in stream_generator:
             if chunk['type'] == 'answer':
+                ai_reply += chunk['content']
                 yield json.dumps({
                     "type": "answer",
                     "content": chunk['content'],
                     "source": chunk.get('source', 'base_model'),
-                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    # "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }) +"\n"
             elif chunk['type'] == 'doc':
                 yield json.dumps({
                     "type": "doc",
                     "content": chunk['content'],
                     "source": chunk.get('source', 'base_model'),
-                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    # "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }) + "\n"
             elif chunk['type'] == 'questions':
                 yield json.dumps({
                     "type": "questions",
                     "content": chunk['content'],
                     "source": chunk.get('source', 'base_model'),
-                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    # "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }) + "\n"
             elif chunk['type'] == 'end':
                 yield json.dumps({
                     "type": "end",
                     "content": "对话结束",
-                    "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                    # "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
                 }) + "\n"
 
 
         yield json.dumps({
             "type": "final_end",
             "content": "会话已完成",
-            "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            # "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         }) + "\n"
+
+        add_conversation_history(
+            conversation_history, query, ai_reply, fr.conversation_path
+        )
+        # print(f"ai_reply:{ai_reply}")
 
     # 返回StreamingHttpResponse对象
     return StreamingHttpResponse( event_stream(), content_type='text/event-stream')
@@ -1044,12 +1051,12 @@ async def do_paper_study(request) -> StreamingHttpResponse:
 """
 
 
-@require_http_methods(["POST"])
-def re_do_paper_study(request):
+# @require_http_methods(["POST"])
+async def re_do_paper_study(request):
     # 鉴权
     username = request.session.get("username")
     if username is None:
-        username = "sanyuba"
+        username = "zjq"
     user = User.objects.filter(username=username).first()
     if user is None:
         return reply.fail(msg="请先正确登录")
@@ -1073,16 +1080,58 @@ def re_do_paper_study(request):
     # 获取最后一次的询问, 并去除最后一次的对话记录
     query = conversation_history[-2].get("content")
     conversation_history = conversation_history[:-2]
+    print (f"time_start: {datetime.datetime.now()}")
 
-    # 同 do_paper_study
-    ai_reply, origin_docs, question_reply = do_file_chat(
-        conversation_history, query, tmp_kb_id
-    )
-    add_conversation_history(conversation_history, query, ai_reply, conversation_path)
-    return reply.success(
-        {"ai_reply": ai_reply, "docs": origin_docs, "prob_question": question_reply},
-        msg="成功",
-    )
+    # 获取流式生成器
+    stream_generator = await do_file_chat(conversation_history, query, tmp_kb_id)
+
+    # 创建流式响应
+    async def event_stream():
+        ai_reply = ""
+        async for chunk in stream_generator:
+            if chunk['type'] == 'answer':
+                ai_reply += chunk['content']
+                yield json.dumps({
+                    "type": "answer",
+                    "content": chunk['content'],
+                    "source": chunk.get('source', 'base_model'),
+                    # "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }) +"\n"
+            elif chunk['type'] == 'doc':
+                yield json.dumps({
+                    "type": "doc",
+                    "content": chunk['content'],
+                    "source": chunk.get('source', 'base_model'),
+                    # "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }) + "\n"
+            elif chunk['type'] == 'questions':
+                yield json.dumps({
+                    "type": "questions",
+                    "content": chunk['content'],
+                    "source": chunk.get('source', 'base_model'),
+                    # "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }) + "\n"
+            elif chunk['type'] == 'end':
+                yield json.dumps({
+                    "type": "end",
+                    "content": "对话结束",
+                    # "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+                }) + "\n"
+
+
+        yield json.dumps({
+            "type": "final_end",
+            "content": "会话已完成",
+            # "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        }) + "\n"
+
+        add_conversation_history(
+            conversation_history, query, ai_reply, conversation_path
+        )
+        # print(f"ai_reply:{ai_reply}")
+
+    # 返回StreamingHttpResponse对象
+    return StreamingHttpResponse( event_stream(), content_type='text/event-stream')
 
 @require_http_methods(["POST"])
 def clear_conversation(request):
