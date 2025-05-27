@@ -108,13 +108,10 @@ class Paper(models.Model):
         return hash(self.paper_id)
 
     def get_mind_map(self):
-        print(f'{self.title} 生成思维导图...')
-        if "zjq" in str(self.mind_map_path):
-            return
+        if "markmap" in self.mind_map:
+            return self.mind_map
         else:
-            mermaid = DeepSeek().get_mind_map(self.abstract)
-            mermain_path = mermaid_to_image(mermaid, f'/usr/zjq/backend/backend/resource/database/papers/mermaid/{self.paper_id}.png')
-            self.mind_map_path = mermain_path
-            self.mind_map = mermaid
+            mind_map = DeepSeek().get_mind_map(self.paragraph)
+            self.mind_map = mind_map
             self.save()
-
+            return mind_map

@@ -661,7 +661,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                     prompts = {}
 
                     # 遍历并检查类型
-                    for model, details in data.items():
+                    for model, details in datas.items():
                         if isinstance(details, dict):
                             prompts[model] = details.get("prompt", "")
                         else:

@@ -1,29 +1,71 @@
-我需要你对于文章摘要生成思维导图，下面是生成样例
-graph TD
-    A[Natural Language Navigation for Service Robots] --> B[Task Definition]
-    A --> C[Challenges]
-    A --> D[Proposed Solution]
-    A --> E[Experimental Results]
+根据论文生成如下形式的总结
 
-    B --> B1["- Predict action sequence from NL instructions"]
-    B --> B2["- Example: 'Walk out of bathroom to right stairs'"]
+---
+title: Fabrication-Aware Reverse Engineering for Carpentry
+markmap:
+  colorFreezeLevel: 2
+---
 
-    C --> C1["- Environment exploration"]
-    C --> C2["- Accurate path following"]
-    C --> C3["- Language-vision relationship modeling"]
+## 核心贡献
+- 提出首个考虑制造约束的木工逆向工程框架
+- 开发多阶段优化流程:
+  - 基于点云的部件识别
+  - 几何与图像证据结合的装配约束恢复
+  - 多视图协同分割的几何细化
+- 实现参数化轮廓拟合算法:
+  - 保持装配约束
+  - 平衡简洁性与准确性
+- 验证系统支持:
+  - 物理复现
+  - CAD编辑能力
 
-    D --> D1[CrossMap Transformer Network]
-    D --> D2[Transformer-based Speaker]
-    D --> D3[Double Back-Translation Model]
+## 方法框架
+### 部件识别
+1. RANSAC平面检测
+2. 高斯卷积轮廓提取
+3. 平面扫描厚度估计
+4. 模拟退火部件选择
 
-    D1 --> D11["- Encodes linguistic/visual features"]
-    D1 --> D12["- Sequentially generates paths"]
+### 装配优化
+- 连接类型分类:
+  - T型连接
+  - 角连接
+- 接缝证据融合:
+  - 颜色差异分析
+  - 梯度特征检测
+- 全局正交约束优化
 
-    D2 --> D21["- Generates navigation instructions"]
+### 几何细化
+1. 多视图MRF分割:
+  - LAB颜色空间GMM建模
+  - 可见性约束融合
+2. 动态规划曲线拟合:
+  - Bézier曲线与直线混合
+  - 约束驱动节点优化
+3. 厚度正则化聚类
 
-    D3 --> D31["- Paths → Instructions"]
-    D3 --> D32["- Instructions → Paths"]
-    D3 --> D33["- Shared latent features"]
+## 实验结果
+- 测试对象:
+  - 凳子/书架/托盘等6类木制品
+- 精度指标:
+  - RMSE: 0.2-0.4%D
+  - 连接正确率: 83%
+- 处理时间:
+  - 部件识别: 3-25s
+  - 几何优化: 54-507s
+- 物理验证:
+  - 编辑后模型可制造性
+  - 连接器自动生成
 
-    E --> E1["- Improved instruction understanding"]
-    E --> E2["- Enhanced instruction generation"]
+## 局限与展望
+- 依赖可见表面纹理
+- 复杂内部结构处理不足
+- 扩展方向:
+  - 实时引导采集
+  - 连接强度优化
+  - 多材料支持
+
+## 相关资源
+- [项目主页](https://arxiv.org/abs/2107.09965)
+- [数据集] 7类木制家具模型
+- [代码框架] C++/Python混合实现
