@@ -959,6 +959,11 @@ def add_conversation_history(conversation_history, query, ai_reply, conversation
     论文研读 Key! 此时AI回复为非流式输出, 可能浪费时间, alpha版本先这样
 """
 
+from asgiref.sync import sync_to_async
+# 异步orm
+@sync_to_async
+def get_user_by_username(username):
+    return User.objects.filter(username=username).first()
 from business.utils.activity import update_user_activity
 from django.http import StreamingHttpResponse
 async def do_paper_study(request) -> StreamingHttpResponse:
@@ -966,7 +971,8 @@ async def do_paper_study(request) -> StreamingHttpResponse:
     username = request.session.get("username")
     if username is None:
         username = "zjq"
-    user = User.objects.filter(username=username).first()
+    # user = User.objects.filter(username=username).first()
+    user = await get_user_by_username(username)
     if user is None:
         return reply.fail(msg="请先正确登录")
     update_user_activity(user.user_id, type='study')
