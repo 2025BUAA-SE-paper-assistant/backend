@@ -2,6 +2,7 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.http import require_http_methods
 from django.contrib.auth.decorators import login_required
+from business.models.user import User
 from wrap.content import validate_content
 from business.utils.reply import content_error
 from scripts.check import GreenCheck
@@ -12,10 +13,12 @@ from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
 
 
 
-@login_required
 @require_http_methods(["POST"])
 @validate_content(fields=["content"])
 def create_remark(request):
+    request.user = User.objects.filter(
+                username=request.session.get("username")
+            ).first()
     user = request.user
     data = json.loads(request.body)
     paper_id = data.get("paper_id")
@@ -46,10 +49,12 @@ def create_remark(request):
         return JsonResponse({"error": "论文未找到"}, status=404)
 
 
-@login_required
 @require_http_methods(["GET"])
 def get_remarks(request, paper_id):
     try:
+        request.user = User.objects.filter(
+                username=request.session.get("username")
+            ).first()
         paper = Paper.objects.get(paper_id=paper_id)
         is_private = request.GET.get("is_private", "false").lower() == "true"
         paragraph_id = request.GET.get("paragraph_id")
@@ -100,11 +105,13 @@ def get_remarks(request, paper_id):
         return JsonResponse({"error": "论文未找到"}, status=404)
 
 
-@login_required
 @require_http_methods(["POST"])
 @validate_content(fields=["content"])
 def update_remark(request, remark_id):
     try:
+        request.user = User.objects.filter(
+                username=request.session.get("username")
+            ).first()
         remark = Remark.objects.get(id=remark_id, user=request.user)
         if not remark:
             return JsonResponse({"error": "备注未找到或无权限"}, status=403)
@@ -125,10 +132,12 @@ def update_remark(request, remark_id):
         return JsonResponse({"error": "备注未找到或无权限"}, status=403)
 
 
-@login_required
 @require_http_methods(["DELETE"])
 def delete_remark(request, remark_id):
     try:
+        request.user = User.objects.filter(
+                username=request.session.get("username")
+            ).first()
         remark = Remark.objects.get(id=remark_id)
         user = request.user
         if user != remark.user and not user.is_superuser:
@@ -142,10 +151,12 @@ def delete_remark(request, remark_id):
         return JsonResponse({"error": str(e)}, status=500)
 
 
-@login_required
 @require_http_methods(["POST"])
 def like_remark(request, remark_id):
     try:
+        request.user = User.objects.filter(
+                username=request.session.get("username")
+            ).first()
         remark = Remark.objects.get(id=remark_id)
         if remark.is_liked(request.user):
             remark.likes.remove(request.user)

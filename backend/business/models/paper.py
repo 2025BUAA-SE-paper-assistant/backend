@@ -1,6 +1,7 @@
 """
 数据库文献表
 """
+import json
 from django.db import models
 import uuid
 
@@ -108,10 +109,11 @@ class Paper(models.Model):
         return hash(self.paper_id)
 
     def get_mind_map(self):
-        if "markmap" in self.mind_map:
+        if "markmap" in str(self.mind_map):
             return self.mind_map
         else:
-            mind_map = DeepSeek().get_mind_map(self.paragraph)
+
+            mind_map = DeepSeek().get_mind_map(self.abstract)
             self.mind_map = mind_map
             self.save()
             return mind_map

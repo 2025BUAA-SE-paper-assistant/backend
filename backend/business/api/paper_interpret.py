@@ -694,7 +694,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                     "model_name": "chatglm3-6b",
                     "history": conversation_history[-10:],
                     "prompt_name": "text_new",
-                    "max_tokens": 2048,
+                    "max_tokens": 4096,
                     "top_k": 10,
                 }
             else:
@@ -705,7 +705,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                     "stream": True,
                     "model_name": "chatglm3-6b",
                     "prompt_name": "text_new",
-                    "max_tokens": 2048,
+                    "max_tokens": 4096,
                     "top_k": 10,
                 }
 
@@ -741,7 +741,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                     "query": query_2,
                     "temperature": 0.7,
                     "top_k": 10,
-                    "max_tokens": 2048,
+                    "max_tokens": 4096,
                     "search_engine_name": "bing",
                     "model_name": "chatglm3-6b",
                     "prompt_name": "search",
@@ -776,7 +776,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                     "temperature": 0.7,
                     "model_name": "chatglm3-6b",
                     "prompt_name": "literature_research_agent",
-                    "max_tokens": 4096,
+                    "max_tokens": 8192,
                     "top_k": 10,
                     "stream": True,
                 }
@@ -808,7 +808,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                     "model_name": "chatglm3-6b",
                     "prompt_name": "agent_integration",
                     "history": conversation_history[-10:],
-                    "max_tokens": 4096,
+                    "max_tokens": 8192,
                     "top_k": 10,
                     "stream": True,
                 }
@@ -819,7 +819,7 @@ async def do_file_chat(conversation_history, query, tmp_kb_id):
                     "temperature": 0.3,
                     "model_name": "chatglm3-6b",
                     "prompt_name": "agent_integration",
-                    "max_tokens": 4096,
+                    "max_tokens": 8192,
                     "top_k": 10,
                     "stream": True,
                 }
@@ -1001,6 +1001,8 @@ async def do_paper_study(request) -> StreamingHttpResponse:
         ai_reply = ""
         async for chunk in stream_generator:
             if chunk['type'] == 'answer':
+                # if chunk.get('source', 'base_model') == "final":
+                    # 最终回答
                 ai_reply += chunk['content']
                 yield json.dumps({
                     "type": "answer",
@@ -1039,10 +1041,11 @@ async def do_paper_study(request) -> StreamingHttpResponse:
         add_conversation_history(
             conversation_history, query, ai_reply, fr.conversation_path
         )
-        # print(f"ai_reply:{ai_reply}")
+        print(f"ai_reply:{ai_reply}")
 
     # 返回StreamingHttpResponse对象
     return StreamingHttpResponse( event_stream(), content_type='text/event-stream')
+
 
 
 """
@@ -1090,6 +1093,8 @@ async def re_do_paper_study(request):
         ai_reply = ""
         async for chunk in stream_generator:
             if chunk['type'] == 'answer':
+                # if chunk.get('source', 'base_model') == "final":
+                    # 最终回答
                 ai_reply += chunk['content']
                 yield json.dumps({
                     "type": "answer",
@@ -1128,7 +1133,7 @@ async def re_do_paper_study(request):
         add_conversation_history(
             conversation_history, query, ai_reply, conversation_path
         )
-        # print(f"ai_reply:{ai_reply}")
+        print(f"ai_reply:{ai_reply}")
 
     # 返回StreamingHttpResponse对象
     return StreamingHttpResponse( event_stream(), content_type='text/event-stream')

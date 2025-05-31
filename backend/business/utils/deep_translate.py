@@ -70,6 +70,7 @@ class DeepSeek:
 
     def get_mind_map(self, text):
         #TODO: 讲这里的硬编码改到配置里面
+        
         response = openai.ChatCompletion.create(
             model="deepseek-chat",
             messages=[

@@ -12,17 +12,14 @@ class ExceptionMiddleware:
 
     def __call__(self, request):
         try:
-            request.user = User.objects.filter(
-                username=request.session.get("username")
-            ).first()
+            
             self.logger.info(
                 f"{request.user}-访问通过{request.method}请求访问接口{request.path}"
             )
             response = self.get_response(request)
-            self.logger.info(f"{request.user}-用户访问接口{request.path}的结果: {response.status_code}")
+            # self.logger.info(f"{request.user}-用户访问接口{request.path}的结果: {response.status_code}")
         except Exception as e:
             self.logger.error(
                 f"{request.user}-访问通过{request.method}请求访问接口{request.path}时发生错误: {str(e)}"
             )
             return JsonResponse({"error": str(e)}, status=500)
-        return response
