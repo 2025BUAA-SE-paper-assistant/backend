@@ -148,7 +148,7 @@ DATABASES = {
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
             # 添加以下设置尝试解决认证问题
             "charset": "utf8mb4",
-            'connect_timeout': 60,
+            'connect_timeout': 600,
             # "ssl_disabled": True,
         },
     }

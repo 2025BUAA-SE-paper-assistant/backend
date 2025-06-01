@@ -225,7 +225,7 @@ def get_recommendation(request):
     ret_info = []
     for paper in papers:
         ret_info.append(paper.to_dict()) 
-    papers_ids = [paper['paper_id'] for paper in papers]
+    papers_ids = [paper.paper_id for paper in papers]
     # 随机选择五篇论文的 ID
     # selected_paper_ids = random.sample(papers_ids, min(10, len(papers_ids)))
     # 获取选中论文的详细信息
