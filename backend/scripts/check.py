@@ -4,11 +4,6 @@
 
 # 计费方式：https://help.aliyun.com/document_detail/464388.html（1小时1结算）
 
-# accesskey：
-
-# ID：LTAI5tBhRnVNprKTdeRj6sBR
-# PASSWORD：KQz8fQG2gMFreEUmdkKnoR8uywub0a
-
 # 代码：
 
 # ```python
@@ -28,8 +23,8 @@ class GreenCheck:
 
     def __init__(self):
         self.config = Config(
-            access_key_id='LTAI5tBhRnVNprKTdeRj6sBR',
-            access_key_secret='KQz8fQG2gMFreEUmdkKnoR8uywub0a',
+            access_key_id='',
+            access_key_secret='',
             # 连接时超时时间，单位毫秒（ms）。
             connect_timeout=3000,
             # 读取时超时时间，单位毫秒（ms）。
